@@ -1,0 +1,4 @@
+const DB='contraponto-personal-v1'; const STORE='app';const KEY='local';
+function openDB(){return new Promise((resolve,reject)=>{const q=indexedDB.open(DB,1);q.onupgradeneeded=()=>q.result.createObjectStore(STORE);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});}
+export async function readApp(){let db;try {db=await openDB();return await new Promise((resolve,reject)=>{const t=db.transaction(STORE,'readonly');const q=t.objectStore(STORE).get(KEY);q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>reject(q.error);});}finally{db?.close();}}
+export async function writeApp(data){let db;try{db=await openDB();await new Promise((resolve,reject)=>{const t=db.transaction(STORE,'readwrite');t.objectStore(STORE).put(data,KEY);t.oncomplete=resolve;t.onerror=()=>reject(t.error);});}finally{db?.close();}}

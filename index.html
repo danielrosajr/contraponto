@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1220" />
+  <meta name="description" content="CONTRAPONTO: um laboratório privado e visual de pensamentos, perguntas e debates internos." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="./assets/icon.svg" />
+  <link rel="stylesheet" href="./style.css" />
+  <title>CONTRAPONTO — Laboratório de Pensamentos</title>
+</head>
+<body data-theme="dark">
+  <div id="app">
+    <header class="topbar">
+      <button class="brand" id="brandBtn" title="Voltar à biblioteca"><span class="brand-mark">⌁</span><span>CONTRA<span class="brand-accent">PONTO</span><small>LABORATÓRIO DE PENSAMENTOS</small></span></button>
+      <div class="top-actions"><span class="privacy-label">● Privado neste dispositivo</span><button class="icon-btn" id="themeBtn" title="Alternar tema" aria-label="Alternar modo escuro ou claro">◐</button><button class="secondary small" id="globalImport">Importar JSON</button></div>
+    </header>
+    <main id="library" class="library">
+      <div class="library-hero"><div><span class="eyebrow">SEU ESPAÇO DE REFLEXÃO</span><h1>Pense além da primeira resposta<span class="dot">.</span></h1>
+        <p>Uma pergunta pode abrir dezenas de caminhos. Explore argumentos, contradições e perspectivas sem perder o fio.</p>
+        <div class="hero-actions"><button class="primary" id="newReflection">＋ Nova reflexão</button><button class="secondary" id="openDemo">Explorar demonstração ↗</button></div>
+      </div><div class="hero-art" aria-hidden="true"><div class="art-node art-a">Pergunta <b>?</b></div><div class="art-track"></div><div class="art-node art-b">Objeção <b>!</b></div><div class="art-node art-c">Conclusão <b>✓</b></div></div></div>
+      <div class="lib-heading"><div><span class="eyebrow">MINHA BIBLIOTECA</span><h2>Reflexões <span id="reflectionCount" class="count">0</span></h2></div>
+      <div class="filters"><input type="search" id="searchReflection" placeholder="Buscar reflexões..." aria-label="Buscar reflexões" /><select id="libraryFilter" aria-label="Filtrar reflexões"><option value="ativas">Ativas</option><option value="arquivadas">Arquivadas</option><option value="todas">Todas</option></select></div></div>
+      <div id="reflectionGrid" class="reflection-grid"></div>
+      <div class="privacy-note">🔒 Tudo fica no seu navegador, salvo localmente. Faça backups JSON para não perder suas reflexões ao limpar os dados do dispositivo. Não há sincronização automática.</div>
+    </main>
+    <main id="workspace" class="workspace hidden">
+      <div class="workspace-heading">
+        <button class="back-btn" id="backHome" title="Biblioteca">← <span>Biblioteca</span></button>
+        <div class="workspace-title"><h1 id="currentTitle">Reflexão</h1><span id="currentQuestion"></span></div>
+        <div class="workspace-status"><span id="saveStatus">Tudo salvo</span><button class="icon-btn" id="reflectionSettings" title="Editar detalhes da reflexão">⚙</button><button class="secondary small" id="exportBtn">↓ Exportar</button></div>
+      </div>
+      <div class="workspace-body">
+        <aside class="sidebar" id="sidebar">
+          <div class="aside-top"><span class="eyebrow">FERRAMENTAS</span><button class="icon-btn" id="collapseSidebar" title="Recolher ferramentas">≪</button></div>
+          <div class="aside-content">
+            <div class="aside-section"><p class="aside-label">NAVEGAÇÃO</p><div class="tab-list"><button class="tab active" data-view="map">◉ Mapa de ideias</button><button class="tab" data-view="history">☷ Histórico</button></div></div>
+            <div class="aside-section"><p class="aside-label">CRIAR</p><button class="wide-primary" id="addRoot">＋ Pensamento livre</button><button class="wide-secondary" id="challengeSidebar">✦ Desafiar pensamento</button><button class="wide-secondary" id="voicesBtn">☻ Minhas vozes internas</button></div>
+            <div class="aside-section"><p class="aside-label">ORGANIZAR</p><button class="plain-btn" id="layoutBtn">▦ Reorganizar automaticamente</button><button class="plain-btn" id="focusRootBtn">⌖ Ir à pergunta principal</button><button class="plain-btn" id="centerBtn">⛶ Enquadrar todo o mapa</button></div>
+            <div class="aside-footer"><b>Atalhos</b><p><kbd>N</kbd> novo bloco · <kbd>Del</kbd> excluir selecionado · <kbd>Ctrl Z</kbd> desfazer</p><p>Arraste o fundo para navegar. Use scroll para zoom ou os botões + e −.</p></div>
+          </div>
+        </aside>
+        <section class="work-main">
+          <div class="toolbar"><div class="toolbar-left"><button class="icon-btn mobile-menu" id="showSidebar" title="Ferramentas">☰</button><button class="tool active" id="mapTab">◉ <span>Mapa</span></button><button class="tool" id="historyTab">☷ <span>Histórico</span></button><span class="toolbar-sep"></span><button class="icon-btn" id="undoBtn" title="Desfazer (Ctrl+Z)">↶</button><button class="icon-btn" id="redoBtn" title="Refazer (Ctrl+Shift+Z)">↷</button></div>
+            <div class="toolbar-right"><label class="line-toggle"><input type="checkbox" id="emphasisToggle" checked /> Destacar linha principal</label><button class="secondary small" id="connectToolbar">⤳ Conectar</button><button class="primary small" id="addToolbar">＋ Bloco</button></div></div>
+          <div id="graphPanel" class="graph-panel">
+            <div id="graphViewport" class="graph-viewport" aria-label="Editor visual do mapa de pensamentos">
+              <div id="graphStage" class="graph-stage"><svg id="graphEdges" class="graph-edges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg><div id="graphNodes" class="graph-nodes"></div></div>
+              <div id="graphEmpty" class="graph-empty hidden">Seu mapa está vazio. <button class="primary" id="emptyAdd">＋ Criar primeiro pensamento</button></div>
+              <div class="canvas-hint">Arraste o fundo para explorar · Selecione um bloco para continuar</div>
+            </div>
+            <div class="zoom-controls"><button id="zoomIn" title="Aproximar">+</button><span id="zoomLabel">100%</span><button id="zoomOut" title="Afastar">−</button><button id="fitMap" title="Enquadrar tudo">⛶</button></div>
+            <div class="minimap" id="miniMap" title="Clique para navegar pelo mapa"><span>VISÃO GERAL</span><svg id="miniMapSvg" viewBox="0 0 200 100" preserveAspectRatio="xMidYMid meet"></svg></div>
+            <div id="selectionHint" class="selection-hint">Escolha um pensamento para continuar seu raciocínio.</div>
+          </div>
+          <div id="historyPanel" class="history-panel hidden"><div class="history-head"><div><span class="eyebrow">ORDEM EM QUE AS IDEIAS SURGIRAM</span><h2>Histórico de raciocínio</h2></div><button class="secondary small" id="historyAdd">＋ Novo pensamento</button></div><div id="historyList" class="history-list"></div></div>
+        </section>
+        <aside class="inspector hidden" id="inspector"><div class="inspector-top"><span class="eyebrow">PENSAMENTO SELECIONADO</span><button class="icon-btn" id="closeInspector" aria-label="Fechar detalhes">×</button></div><div id="inspectorContent"></div></aside>
+      </div>
+    </main>
+  </div>
+  <div id="modal" class="modal-overlay hidden" role="presentation"><div class="modal-card" role="dialog" aria-modal="true" aria-label="Editar informações"><div class="modal-header"><h2 id="modalTitle"></h2><button class="icon-btn" id="closeModal" aria-label="Fechar janela">×</button></div><div id="modalContent"></div></div></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <input type="file" id="jsonFileInput" accept=".json,application/json" hidden />
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
