@@ -41,3 +41,26 @@ button.primary,button.secondary,button.wide-primary,button.wide-secondary{border
 .history-notes{border-left:2px solid var(--accent);margin-bottom:10px;padding:4px 10px;background:var(--surface2);border-radius:0 7px 7px 0}
 .history-notes p{margin:3px 0;font-size:11px}
 @media(max-width:620px){.assist-heading{align-items:flex-start;flex-direction:column}.assist-actions{flex-direction:column;align-items:flex-start}.glossary-results{max-height:67dvh}}
+
+/* v0.2.1 — Dialogs com viewport seguro, ações fixas e revisão coletiva */
+.modal-overlay{overflow:hidden;overscroll-behavior:contain;padding:clamp(8px,2vh,20px) 12px;padding-top:max(clamp(8px,2vh,20px),env(safe-area-inset-top));padding-bottom:max(clamp(8px,2vh,20px),env(safe-area-inset-bottom))}
+.modal-card{max-height:100%;max-height:calc(100dvh - max(16px,4vh) - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:0;overflow:hidden}
+.modal-card.modal-wide{width:min(96vw,840px)}
+.modal-header{flex:none;min-height:54px;gap:12px}
+.modal-header h2{font-size:clamp(15px,2.3vw,18px);line-height:1.3}
+#modalContent{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+#modalContent>.modal-body{min-height:0;flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable;padding-bottom:0}
+#modalContent .modal-actions{position:sticky;bottom:0;z-index:2;background:var(--surface);border-top:1px solid var(--border);padding:12px 2px max(12px,env(safe-area-inset-bottom));margin-top:14px;box-shadow:0 -8px 16px -10px var(--shadow)}
+#modalContent .modal-actions button{min-height:36px}
+.batch-select-all{display:flex;gap:9px;align-items:center;font-weight:700;font-size:12px;padding:12px;background:var(--surface2);border-radius:8px;margin-bottom:10px}
+.batch-list{display:grid;gap:9px;max-height:min(51dvh,490px);overflow-y:auto;overscroll-behavior:contain;padding:2px 4px 12px 0}
+.batch-row{display:flex;align-items:flex-start;gap:11px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer}
+.batch-row:hover{border-color:var(--accent)}.batch-row>input{flex:none;margin-top:3px;accent-color:var(--accent)}
+.batch-description{display:grid;gap:6px;min-width:0;font-size:12px;overflow-wrap:anywhere}
+.batch-excerpt{font-size:11px;color:var(--muted);white-space:pre-wrap;line-height:1.4}
+.batch-diff{font-size:11px;line-height:1.5}.batch-diff b{color:var(--accent)}.batch-diff s{color:var(--faint)}
+.batch-reason{font-size:10px;color:var(--faint)}
+.batch-result{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;font-size:11px}
+.batch-result>span{min-width:0;overflow-wrap:anywhere}.batch-result small{display:block;color:var(--muted);padding-top:3px}
+@media(max-width:620px){.modal-overlay{align-items:center;padding-left:8px;padding-right:8px}.modal-card,.modal-card.modal-wide{width:100%;max-height:calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));border-radius:13px}.modal-header{padding:12px 14px}.modal-body{padding:12px!important}.batch-list{max-height:min(49dvh,460px)}#modalContent .modal-actions{bottom:0;flex-wrap:wrap}#modalContent .modal-actions button{flex:1;white-space:normal}}
+@media(max-height:550px){.modal-card{max-height:calc(100dvh - 12px)}.modal-header{min-height:42px;padding:8px 12px}#modalContent>.modal-body{padding-top:10px}.batch-list{max-height:40dvh}}

@@ -1,5 +1,19 @@
 # Histórico de versões
 
+## v0.2.1 — Revisão em Lote (22/10/2026)
+
+### Correções
+- Janela de edição adaptada à altura da tela: rolagem interna e botões de salvar/cancelar permanentemente acessíveis, inclusive em janelas pequenas.
+
+### Novidades
+- Analisar todos os blocos de uma reflexão de uma vez, pré-visualizar classificações atuais e sugeridas, selecionar individualmente, confirmar lote e revisar depois, com um único passo para desfazer o lote inteiro.
+- Preserva textos, vozes, notas, conexões, posições e a natureza manual Fato, mesmo quando o motor de regras propõe mudanças.
+- Opções de tipos, relações, classificações, estados, vozes e blocos de origem/destino em ordem alfabética. Também ordena termos do glossário e ações rápidas.
+
+### Compatibilidade e testes
+- Dados mantidos na estrutura `schemaVersion: 2`; novo cache offline `contraponto-0.2.1` e módulo `src/batch.js`.
+- 17 testes automatizados passam. UI simulada no Chromium em três tamanhos usando armazenamento em memória: edição, prévia, aplicação, revisão e desfazer testados. A navegação HTTP local foi bloqueada por política, então persistência/offline reais ainda devem ser validados no dispositivo.
+
 ## v0.2.0 — Pensamento Livre (22/10/2026)
 
 ### Novidades

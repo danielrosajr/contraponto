@@ -3,6 +3,7 @@ import {readApp,writeApp} from './storage.js';
 import {markdownFor,promptFor,downloadText,downloadSvgOrPng} from './export.js';
 import {GLOSSARY,GLOSSARY_GROUPS,definition} from './glossary.js';
 import {suggestThought} from './inference.js';
+import {planBulkClassification} from './batch.js';
 
 const $=id=>document.getElementById(id);
 let app, activeId=null, selectedId=null, view='map', pan={x:100,y:100},zoom=1, visible=new Set(), showMainline=true;
@@ -13,7 +14,8 @@ const node=id=>reflect()?.nodes.find(n=>n.id===id);
 const voice=id=>reflect()?.voices.find(v=>v.id===id);
 const labelOf=n=>n.title||n.content.slice(0,55)||TYPES[n.type]?.[0]||'Pensamento';
 const clone=o=>JSON.parse(JSON.stringify(o));
-const options=(entries,chosen)=>entries.map(([k,v])=>`<option value="${safeText(k)}" ${k===chosen?'selected':''}>${safeText(v)}</option>`).join('');
+const alphabetize=entries=>[...entries].sort((a,b)=>String(a[1]).localeCompare(String(b[1]),'pt-BR',{sensitivity:'base',numeric:true}));
+const options=(entries,chosen)=>alphabetize(entries).map(([k,v])=>`<option value="${safeText(k)}" ${k===chosen?'selected':''}>${safeText(v)}</option>`).join('');
 const typeOptions=chosen=>options(Object.entries(TYPES).map(([id,t])=>[id,t[0]]),chosen);
 const relationOptions=chosen=>options(Object.entries(RELATIONS),chosen);
 const voiceOptions=chosen=>options(reflect().voices.map(v=>[v.id,v.name]),chosen);
@@ -21,7 +23,7 @@ const termHTML=(group,key)=>{const d=definition(group,key);return d?`<b>${safeTe
 function glossaryModal(){openModal('Minidicionário de pensamentos',`<p class="small-note">Toque em um termo para entender quando utilizá-lo. Estas definições não julgam se uma ideia é correta ou verdadeira.</p><input type="search" id="glossarySearch" placeholder="Buscar termo ou significado..." aria-label="Buscar no dicionário" autofocus /><div class="glossary-results" id="glossaryResults"></div>`,el=>{
  const out=el.querySelector('#glossaryResults'),search=el.querySelector('#glossarySearch');
  const paint=()=>{const q=search.value.toLocaleLowerCase('pt-BR').trim();out.innerHTML=GLOSSARY_GROUPS.map(([group,title])=>{
- const entries=Object.entries(GLOSSARY[group]).filter(([id,[label,desc,ex]])=>[label,desc,ex].join(' ').toLocaleLowerCase('pt-BR').includes(q));
+ const entries=alphabetize(Object.entries(GLOSSARY[group]).filter(([id,[label,desc,ex]])=>[label,desc,ex].join(' ').toLocaleLowerCase('pt-BR').includes(q)).map(([id,term])=>[id,term[0]]));
  return entries.length?`<section class="dictionary-section"><h3>${title}</h3>${entries.map(([id,d])=>`<details class="dictionary-item"><summary>${safeText(d[0])}</summary><p>${safeText(d[1])}</p><small>Exemplo: “${safeText(d[2])}”</small></details>`).join('')}</section>`:'';}).join('')||'<p class="small-note">Nenhum termo encontrado.</p>';};
  search.addEventListener('input',paint);paint();
  });}
@@ -43,9 +45,9 @@ function restoreSnapshot(s){const idx=app.reflections.findIndex(r=>r.id===active
 function undoAction(){if(!undo.length)return toast('Nada para desfazer.');redo.push(clone(reflect()));restoreSnapshot(undo.pop());}
 function redoAction(){if(!redo.length)return toast('Nada para refazer.');undo.push(clone(reflect()));restoreSnapshot(redo.pop());}
 
-function openModal(title,html,setup){closeModal();$('modalTitle').textContent=title;$('modalContent').innerHTML=`<div class="modal-body">${html}</div>`;$('modal').classList.remove('hidden');if(setup)modalCleanup=setup($('modalContent'))||null;
+function openModal(title,html,setup,{wide=false}={}){closeModal();$('modalTitle').textContent=title;$('modal').querySelector('.modal-card').classList.toggle('modal-wide',wide);$('modalContent').innerHTML=`<div class="modal-body">${html}</div>`;$('modal').classList.remove('hidden');if(setup)modalCleanup=setup($('modalContent'))||null;
  requestAnimationFrame(()=> $('modalContent').querySelector('[autofocus]')?.focus());}
-function closeModal(){modalCleanup?.();modalCleanup=null;$('modal').classList.add('hidden');$('modalContent').innerHTML='';}
+function closeModal(){modalCleanup?.();modalCleanup=null;$('modal').classList.add('hidden');$('modal').querySelector('.modal-card').classList.remove('modal-wide');$('modalContent').innerHTML='';}
 function formModal(title,fields,saveLabel,onSave){openModal(title,`<form id="activeForm">${fields}<div class="modal-actions"><button type="button" class="secondary" data-close-modal>Cancelar</button><button type="submit" class="primary">${saveLabel}</button></div></form>`,el=>{
  const handler=e=>{e.preventDefault();try{if(onSave(new FormData(e.currentTarget))!==false)closeModal();}catch(err){toast(err.message||'Falha ao salvar.');}};el.querySelector('form').addEventListener('submit',handler);return()=>{};});}
 const field=(name,label,value='',input='input',required=false,extra='')=>`<div class="field"><label for="f_${name}">${safeText(label)}</label>${input==='textarea'?`<textarea id="f_${name}" name="${name}" ${required?'required':''} ${extra}>${safeText(value)}</textarea>`:`<input id="f_${name}" name="${name}" value="${safeText(value)}" ${required?'required':''} ${extra} />`}</div>`;
@@ -131,7 +133,7 @@ function renderInspector(){const r=reflect(),n=node(selectedId);if(!r||!n)return
  <div class="inspector-footer"><button class="secondary small" data-inspector="edit">✎ Editar bloco</button><button class="secondary small" data-inspector="connect">⤳ Conectar</button><button class="secondary small" data-inspector="collapse">${n.collapsed?'▸ Expandir':'▾ Recolher'}</button></div>
  ${n.type==='pausa'?`<div class="resume-hint"><b>Ponto de retomada</b><p>Este bloco registra onde a conversa parou.</p><button class="secondary small" data-inspector="resumeFrom">↗ Continuar daqui</button></div>`:''}
  <div class="section-title">CONTINUAR A PARTIR DAQUI</div><div class="action-grid">
- ${[['continue','↗ Continuar'],['question','? Perguntar'],['object','! Objetar'],['respond','↩ Responder'],['example','▦ Exemplo'],['scenario','◇ Cenário'],['emotion','♡ Emoção'],['conclude','◉ Concluir'],['branch','⑂ Ramificação'],['return','↶ Retornar'],['comment','☷ Comentar'],['pause','⏸ Pausar'],['agree','≈ Concordar'],['meta','↹ Sobre o debate'],['plan','☰ Organizar']].map(([a,l])=>`<button data-quick="${a}">${l}</button>`).join('')}</div>
+ ${[['continue','↗ Continuar'],['question','? Perguntar'],['object','! Objetar'],['respond','↩ Responder'],['example','▦ Exemplo'],['scenario','◇ Cenário'],['emotion','♡ Emoção'],['conclude','◉ Concluir'],['branch','⑂ Ramificação'],['return','↶ Retornar'],['comment','☷ Comentar'],['pause','⏸ Pausar'],['agree','≈ Concordar'],['meta','↹ Sobre o debate'],['plan','☰ Organizar']].sort((a,b)=>a[1].replace(/^[^\p{L}]+/u,'').localeCompare(b[1].replace(/^[^\p{L}]+/u,''),'pt-BR',{sensitivity:'base'})).map(([a,l])=>`<button data-quick="${a}">${l}</button>`).join('')}</div>
  <div class="section-title">NOTAS LATERAIS (${notes.length})</div><p class="small-note">Notas são anexadas a este bloco sem virar novos nós nem conexões.</p>
  <div class="margin-notes">${notes.map(a=>`<div class="margin-note"><div>${safeText(a.text)}</div><small>${niceDate(a.createdAt)}</small><button class="icon-btn" data-remove-note="${safeText(a.id)}" title="Excluir esta nota" aria-label="Excluir nota">×</button></div>`).join('')||'<div class="small-note">Nenhuma nota adicionada.</div>'}</div><button class="secondary small" data-inspector="addNote">＋ Adicionar nota lateral</button>
  <div class="section-title">CONEXÕES (${incomings.length} entrada(s), ${outgoings.length} saída(s))</div><div class="small-note">${outgoings.map(e=>`<div style="margin-bottom:8px">${safeText(RELATIONS[e.relation])} → ${safeText(labelOf(node(e.target)||{title:'Bloco ausente'}))}</div>`).join('')||'Nenhuma conexão de saída.'}</div>
@@ -197,6 +199,46 @@ function openNodeEditor(existingId=null,config={}){const r=reflect();if(!r)retur
  });
  setupDefinitionFields();refresh();
  });}
+// Análise em lote, inteiramente local. Apenas a confirmação do usuário altera dados.
+function batchClassify(){
+ const r=reflect();if(!r)return;
+ const plan=planBulkClassification(r);
+ const rows=plan.changes;
+ if(!rows.length){toast('Não foram encontradas sugestões diferentes das classificações atuais.');return;}
+ const summary=`<p class="small-note">${r.nodes.length} blocos analisados · <b>${rows.length} com sugestões de alteração</b>. Isto é um sistema de regras locais, não uma IA externa. Revise as classificações antes de aceitar. <b>Fatos marcados manualmente não são reclassificados automaticamente.</b></p>`;
+ const cards=rows.map((entry,i)=>{
+  const n=r.nodes.find(item=>item.id===entry.id);
+  const currentType=TYPES[entry.before.type]?.[0]||entry.before.type;
+  const nextType=TYPES[entry.after.type]?.[0]||entry.after.type;
+  const currentClass=CLASSES[entry.before.classification]||'Não classificado';
+  const nextClass=CLASSES[entry.after.classification]||'Não classificado';
+  return `<label class="batch-row"><input type="checkbox" data-batch-index="${i}" checked aria-label="Aplicar sugestão no bloco ${i+1}"><span class="batch-description"><strong>${safeText(n?.title||'Bloco '+(i+1))}</strong><span class="batch-excerpt">${safeText(n?.content.slice(0,210)||'')}</span><span class="batch-diff">${entry.before.type!==entry.after.type?`Tipo: <s>${safeText(currentType)}</s> → <b>${safeText(nextType)}</b>`:''}${entry.before.type!==entry.after.type&&entry.before.classification!==entry.after.classification?' · ':''}${entry.before.classification!==entry.after.classification?`Natureza: <s>${safeText(currentClass)}</s> → <b>${safeText(nextClass)}</b>`:''}</span><span class="batch-reason">Confiança ${safeText(entry.confidence)} · ${safeText(entry.explanation)}</span></span></label>`;
+ }).join('');
+ openModal('Revisar classificações do mapa',`${summary}<label class="batch-select-all"><input type="checkbox" id="selectBatchAll" checked> Selecionar todas as sugestões</label><div class="batch-list" id="batchList">${cards}</div><div class="modal-actions"><button class="secondary" type="button" data-close-modal>Cancelar</button><button class="primary" type="button" id="applyBatch">Aplicar ${rows.length} sugestões</button></div>`,el=>{
+  const all=el.querySelector('#selectBatchAll');const cbs=[...el.querySelectorAll('[data-batch-index]')];const submit=el.querySelector('#applyBatch');
+  const update=()=>{const n=cbs.filter(c=>c.checked).length;all.checked=n===cbs.length;all.indeterminate=n>0&&n<cbs.length;submit.disabled=n===0;submit.textContent=`Aplicar ${n} sugestão${n===1?'':'ões'}`;};
+  all.onchange=()=>{cbs.forEach(cb=>cb.checked=all.checked);update();};
+  cbs.forEach(cb=>cb.onchange=update);
+  submit.onclick=()=>{
+   const accepted=cbs.filter(c=>c.checked).map(cb=>rows[Number(cb.dataset.batchIndex)]);
+   if(!accepted.length)return;
+   const ids=new Set(accepted.map(item=>item.id));
+   mutation(()=>{const ts=now();for(const n of r.nodes){if(!ids.has(n.id))continue;const change=accepted.find(item=>item.id===n.id);if(!change)continue;n.type=change.after.type;n.classification=change.after.classification;n.updatedAt=ts;}});
+   showBatchReview(accepted);
+   toast(`${accepted.length} bloco(s) reclassificado(s). É possível revisar ou desfazer.`);
+  };
+ },{wide:true});
+}
+function showBatchReview(changes){
+ const items=changes.map(entry=>{
+  const n=node(entry.id);if(!n)return '';
+  return `<div class="batch-result"><span><b>${safeText(labelOf(n))}</b><small>${safeText(TYPES[n.type]?.[0]||n.type)} · ${safeText(CLASSES[n.classification]||'Não classificado')}</small></span><button type="button" class="secondary small" data-review-node="${safeText(n.id)}">Revisar</button></div>`;
+ }).join('');
+ openModal(`${changes.length} sugestões aplicadas`,`<p class="small-note">Suas notas, vozes, conexões e posições foram preservadas. Use <b>Revisar</b> para corrigir cada bloco ou <b>Desfazer lote</b> para recuperar as classificações anteriores em uma única ação. Se editar outro bloco antes, o histórico de desfazer seguirá a ordem das alterações.</p><div class="batch-list">${items}</div><div class="modal-actions"><button class="secondary" id="revertBatch" type="button">↶ Desfazer lote</button><button class="primary" type="button" data-close-modal>Concluir revisão depois</button></div>`,el=>{
+  el.querySelector('#revertBatch').onclick=()=>{closeModal();undoAction();toast('Lote desfeito; classificações anteriores restauradas.');};
+  el.querySelectorAll('[data-review-node]').forEach(button=>button.onclick=()=>{const id=button.dataset.reviewNode;closeModal();focusNode(id);openNodeEditor(id);});
+ },{wide:true});
+}
 const QUICK = {
  continue:()=>({relation:'continua'}),question:()=>({type:'pergunta',relation:'continua'}),
  object:()=>({type:'objecao',relation:'contesta',voiceId:'eu2'}),respond:()=>({relation:'continua'}),
@@ -317,7 +359,7 @@ function wireEvents(){
  $('emptyAdd').onclick=()=>openNodeEditor();$('historyAdd').onclick=()=>openNodeEditor();
  $('challengeSidebar').onclick=challenge;$('voicesBtn').onclick=editVoices;
  $('centerBtn').onclick=fitMap;$('fitMap').onclick=fitMap;$('focusRootBtn').onclick=()=>{const id=reflect()?.nodes.find(n=>n.type==='pergunta')?.id||reflect()?.nodes[0]?.id;if(id)focusNode(id);};
- $('layoutBtn').onclick=autoLayout;$('zoomIn').onclick=()=>setZoom(zoom*1.2);$('zoomOut').onclick=()=>setZoom(zoom/1.2);
+ $('layoutBtn').onclick=autoLayout;$('batchClassifyBtn').onclick=batchClassify;$('zoomIn').onclick=()=>setZoom(zoom*1.2);$('zoomOut').onclick=()=>setZoom(zoom/1.2);
  $('connectToolbar').onclick=()=>connectModal();$('emphasisToggle').onchange=e=>{showMainline=e.target.checked;renderEdges();};
  $('undoBtn').onclick=undoAction;$('redoBtn').onclick=redoAction;
  $('inspectorContent').onclick=e=>{const noteId=e.target.closest('[data-remove-note]')?.dataset.removeNote;if(noteId)return removeMarginNote(noteId);const q=e.target.closest('[data-quick]')?.dataset.quick;if(q)return quick(q);
