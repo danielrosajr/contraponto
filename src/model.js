@@ -2,7 +2,9 @@ export const TYPES = {
   pergunta: ['Pergunta','?','#70b9ff'], premissa: ['Premissa','◈','#bca8ff'], argumento: ['Argumento','↗','#80cba8'],
   objecao: ['Objeção','!','#fa9b8c'], contra: ['Contra-argumento','↩','#8dc9d2'], exemplo: ['Exemplo','▦','#e6bb7f'],
   cenario: ['Cenário','◇','#ce9de6'], emocao: ['Emoção','♡','#f0a9c0'], valor: ['Valor pessoal','✧','#f1d07f'],
-  provisoria: ['Conclusão provisória','◉','#d1b06e'], final: ['Conclusão final','✓','#8bd3af'], retorno: ['Retorno ao tema','↶','#9eaff7']
+  provisoria: ['Conclusão provisória','◉','#d1b06e'], final: ['Conclusão final','✓','#8bd3af'], retorno: ['Retorno ao tema','↶','#9eaff7'],
+  comentario: ['Comentário','☷','#9eb6c8'], pausa: ['Pausa / marcador','⏸','#d9ac87'],
+  acordo: ['Concordância provisória','≈','#83c4ad'], meta: ['Metacomentário','↹','#9e9bcf'], roteiro: ['Organização / roteiro','☰','#b5b2e9']
 };
 export const RELATIONS = {
   continua: 'Continua', apoia: 'Apoia', contesta: 'Contesta', depende: 'Depende de', exemplifica: 'Exemplifica',
@@ -17,7 +19,14 @@ export const PROMPTS = [
   'O que alguém que discorda de você responderia?', 'Existe alguma contradição com um pensamento anterior?',
   'Você está falando sobre o que sente ou sobre o que acredita que deveria sentir?',
   'Você está respondendo à pergunta original?', 'Quais circunstâncias mudariam sua resposta?',
-  'Essa ideia ainda vale quando considero o ponto de vista de outra pessoa?'
+  'Essa ideia ainda vale quando considero o ponto de vista de outra pessoa?',
+  'Estou falando de como me sinto ou de algo que considero moralmente aceitável?',
+  'Não sentir sofrimento significa necessariamente não sofrer consequências?',
+  'O que muda quando considero autonomia, consentimento e confiança?',
+  'Se a outra pessoa não souber, isso me dá o direito de decidir por ela?',
+  'Minha reação mudaria se a pessoa me contasse espontaneamente?',
+  'Estou confundindo compreender a motivação com concordar com a conduta?',
+  'O que minha voz crítica ainda não conseguiu explicar claramente?'
 ];
 export const uid = (p='id') => `${p}_${globalThis.crypto?.randomUUID?.() || (Date.now().toString(36)+Math.random().toString(36).slice(2))}`;
 export const now = () => new Date().toISOString();
@@ -42,16 +51,22 @@ export function makeDemo() {
     ['pergunta','O que é ser afetado?','Estou falando de sentir algo, de perder autonomia ou de sofrer consequências?','observador',1440,-115],
     ['valor','Autonomia','Valorizar a possibilidade de escolher com base em informações relevantes.','eu1',1440,180],
     ['retorno','Voltar ao centro','Agora volto à pergunta original, distinguindo o que sinto do que realmente acontece.','observador',1800,-35],
-    ['provisoria','Conclusão provisória','Não saber pode impedir sofrimento consciente imediato, mas não garante ausência de consequências, nem preserva necessariamente minha autonomia.','eu1',2160,-45]
+    ['provisoria','Conclusão provisória','Não saber pode impedir sofrimento consciente imediato, mas não garante ausência de consequências, nem preserva necessariamente minha autonomia.','eu1',2160,-45],
+    ['roteiro','Organizando o exercício','Quero comparar o que sinto, o que acontece e o que considero justo em cada cenário.','observador',325,420],
+    ['comentario','Pensamento solto','Ainda não sei se este exemplo realmente ajuda. Vou deixá-lo registrado.','eu1',700,440],
+    ['acordo','Aceito por enquanto','Aceito temporariamente essa distinção, mas quero testá-la em outra situação.','eu2',1090,460],
+    ['meta','Sobre o debate','Não preciso transformar toda fala do meu diálogo interno em argumento.','observador',1480,480],
+    ['pausa','Retomar depois','Na próxima sessão: investigar melhor a diferença entre dano e julgamento moral.','observador',1860,450]
   ];
   const ts=now();
   for (const [type,title,content,voiceId,x,y] of d) r.nodes.push({id:uid('node'),type,title,content,voiceId,x,y,notes:'',classification:'hipotese',state:'ativo',collapsed:false,createdAt:ts,updatedAt:ts});
   const link=(a,b,relation)=>r.edges.push({id:uid('edge'),source:r.nodes[a].id,target:r.nodes[b].id,relation,createdAt:ts});
   link(0,1,'continua');link(1,2,'contesta');link(2,3,'continua');link(2,4,'exemplifica');link(4,5,'contesta');
-  link(3,6,'continua');link(5,6,'exemplifica');link(6,7,'reformula');link(7,8,'apoia');link(8,0,'retorna');link(8,9,'continua');
+  link(3,6,'continua');link(5,6,'exemplifica');link(6,7,'reformula');link(7,8,'apoia');link(8,0,'retorna');link(8,9,'continua');link(0,10,'continua');link(10,11,'continua');link(11,12,'continua');link(12,13,'continua');link(13,14,'continua');
+  r.nodes[11].annotations=[{id:uid('note'),text:'Esta observação não precisa virar outro argumento. É apenas uma nota anexada ao bloco.',createdAt:ts}];
   return r;
 }
-export function initialData() { return {schemaVersion:1,settings:{theme:'dark'},reflections:[makeDemo()]}; }
+export function initialData() { return {schemaVersion:2,settings:{theme:'dark'},reflections:[makeDemo()]}; }
 export function safeText(s) {return String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');}
 export function niceDate(iso) { return iso ? new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(iso)) : '—'; }
 export function cleanFilename(s){return String(s||'reflexao').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-|-$/g,'').toLowerCase().slice(0,65) || 'reflexao';}
@@ -69,7 +84,9 @@ export function normalizeImported(obj) {
       nodes.push({id:n.id.slice(0,130),type:TYPES[n.type]?n.type:'premissa',title:String(n.title||'').slice(0,250),content:String(n.content||'').slice(0,30000),
         notes:String(n.notes||'').slice(0,30000),classification: n.classification in CLASSES ? n.classification:'',state:n.state in STATES ?n.state:'ativo',
         voiceId:String(n.voiceId||'eu1'),x:Number.isFinite(n.x)?Math.max(-100000,Math.min(100000,n.x)):0,
-        y:Number.isFinite(n.y)?Math.max(-100000,Math.min(100000,n.y)):0,collapsed:!!n.collapsed,createdAt:n.createdAt||now(),updatedAt:n.updatedAt||now()});
+        y:Number.isFinite(n.y)?Math.max(-100000,Math.min(100000,n.y)):0,
+        annotations:Array.isArray(n.annotations)?n.annotations.slice(0,100).map(a=>({id:String(a?.id||uid('note')).slice(0,130),text:String(a?.text||'').slice(0,6000),createdAt:a?.createdAt||now()})).filter(a=>a.text.trim()):[],
+        collapsed:!!n.collapsed,createdAt:n.createdAt||now(),updatedAt:n.updatedAt||now()});
     }
     const edges=r.edges.filter(e=>e && unique.has(e.source) && unique.has(e.target) && e.source!==e.target).map(e=>({
       id:typeof e.id==='string'?e.id:uid('edge'),source:e.source,target:e.target,relation:RELATIONS[e.relation]?e.relation:'continua',createdAt:e.createdAt||now()

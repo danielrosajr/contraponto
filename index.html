@@ -14,7 +14,7 @@
   <div id="app">
     <header class="topbar">
       <button class="brand" id="brandBtn" title="Voltar à biblioteca"><span class="brand-mark">⌁</span><span>CONTRA<span class="brand-accent">PONTO</span><small>LABORATÓRIO DE PENSAMENTOS</small></span></button>
-      <div class="top-actions"><span class="privacy-label">● Privado neste dispositivo</span><button class="icon-btn" id="themeBtn" title="Alternar tema" aria-label="Alternar modo escuro ou claro">◐</button><button class="secondary small" id="globalImport">Importar JSON</button></div>
+      <div class="top-actions"><span class="privacy-label">● Privado neste dispositivo</span><button class="secondary small" id="globalGlossary" title="Consultar o minidicionário">? Dicionário</button><button class="icon-btn" id="themeBtn" title="Alternar tema" aria-label="Alternar modo escuro ou claro">◐</button><button class="secondary small" id="globalImport">Importar JSON</button></div>
     </header>
     <main id="library" class="library">
       <div class="library-hero"><div><span class="eyebrow">SEU ESPAÇO DE REFLEXÃO</span><h1>Pense além da primeira resposta<span class="dot">.</span></h1>
@@ -30,14 +30,14 @@
       <div class="workspace-heading">
         <button class="back-btn" id="backHome" title="Biblioteca">← <span>Biblioteca</span></button>
         <div class="workspace-title"><h1 id="currentTitle">Reflexão</h1><span id="currentQuestion"></span></div>
-        <div class="workspace-status"><span id="saveStatus">Tudo salvo</span><button class="icon-btn" id="reflectionSettings" title="Editar detalhes da reflexão">⚙</button><button class="secondary small" id="exportBtn">↓ Exportar</button></div>
+        <div class="workspace-status"><span id="saveStatus">Tudo salvo</span><button class="secondary small hidden" id="resumeSession">↗ Retomar</button><button class="icon-btn" id="reflectionSettings" title="Editar detalhes da reflexão">⚙</button><button class="secondary small" id="exportBtn">↓ Exportar</button></div>
       </div>
       <div class="workspace-body">
         <aside class="sidebar" id="sidebar">
           <div class="aside-top"><span class="eyebrow">FERRAMENTAS</span><button class="icon-btn" id="collapseSidebar" title="Recolher ferramentas">≪</button></div>
           <div class="aside-content">
             <div class="aside-section"><p class="aside-label">NAVEGAÇÃO</p><div class="tab-list"><button class="tab active" data-view="map">◉ Mapa de ideias</button><button class="tab" data-view="history">☷ Histórico</button></div></div>
-            <div class="aside-section"><p class="aside-label">CRIAR</p><button class="wide-primary" id="addRoot">＋ Pensamento livre</button><button class="wide-secondary" id="challengeSidebar">✦ Desafiar pensamento</button><button class="wide-secondary" id="voicesBtn">☻ Minhas vozes internas</button></div>
+            <div class="aside-section"><p class="aside-label">CRIAR</p><button class="wide-primary" id="addRoot">＋ Pensamento livre</button><button class="wide-secondary" id="challengeSidebar">✦ Desafiar pensamento</button><button class="wide-secondary" id="voicesBtn">☻ Minhas vozes internas</button><button class="wide-secondary" id="glossarySidebar">? Minidicionário</button><button class="wide-secondary" id="pauseSession">⏸ Registrar pausa</button></div>
             <div class="aside-section"><p class="aside-label">ORGANIZAR</p><button class="plain-btn" id="layoutBtn">▦ Reorganizar automaticamente</button><button class="plain-btn" id="focusRootBtn">⌖ Ir à pergunta principal</button><button class="plain-btn" id="centerBtn">⛶ Enquadrar todo o mapa</button></div>
             <div class="aside-footer"><b>Atalhos</b><p><kbd>N</kbd> novo bloco · <kbd>Del</kbd> excluir selecionado · <kbd>Ctrl Z</kbd> desfazer</p><p>Arraste o fundo para navegar. Use scroll para zoom ou os botões + e −.</p></div>
           </div>

@@ -1,6 +1,8 @@
 import {TYPES,RELATIONS,CLASSES,STATES,PROMPTS,uid,now,initialData,makeDemo,newReflection,safeText,niceDate,normalizeImported,cleanFilename} from './model.js';
 import {readApp,writeApp} from './storage.js';
 import {markdownFor,promptFor,downloadText,downloadSvgOrPng} from './export.js';
+import {GLOSSARY,GLOSSARY_GROUPS,definition} from './glossary.js';
+import {suggestThought} from './inference.js';
 
 const $=id=>document.getElementById(id);
 let app, activeId=null, selectedId=null, view='map', pan={x:100,y:100},zoom=1, visible=new Set(), showMainline=true;
@@ -15,6 +17,18 @@ const options=(entries,chosen)=>entries.map(([k,v])=>`<option value="${safeText(
 const typeOptions=chosen=>options(Object.entries(TYPES).map(([id,t])=>[id,t[0]]),chosen);
 const relationOptions=chosen=>options(Object.entries(RELATIONS),chosen);
 const voiceOptions=chosen=>options(reflect().voices.map(v=>[v.id,v.name]),chosen);
+const termHTML=(group,key)=>{const d=definition(group,key);return d?`<b>${safeText(d[0])}</b> — ${safeText(d[1])}<br><span>Ex.: “${safeText(d[2])}”</span>`:'Selecione um termo para ver o significado.';};
+function glossaryModal(){openModal('Minidicionário de pensamentos',`<p class="small-note">Toque em um termo para entender quando utilizá-lo. Estas definições não julgam se uma ideia é correta ou verdadeira.</p><input type="search" id="glossarySearch" placeholder="Buscar termo ou significado..." aria-label="Buscar no dicionário" autofocus /><div class="glossary-results" id="glossaryResults"></div>`,el=>{
+ const out=el.querySelector('#glossaryResults'),search=el.querySelector('#glossarySearch');
+ const paint=()=>{const q=search.value.toLocaleLowerCase('pt-BR').trim();out.innerHTML=GLOSSARY_GROUPS.map(([group,title])=>{
+ const entries=Object.entries(GLOSSARY[group]).filter(([id,[label,desc,ex]])=>[label,desc,ex].join(' ').toLocaleLowerCase('pt-BR').includes(q));
+ return entries.length?`<section class="dictionary-section"><h3>${title}</h3>${entries.map(([id,d])=>`<details class="dictionary-item"><summary>${safeText(d[0])}</summary><p>${safeText(d[1])}</p><small>Exemplo: “${safeText(d[2])}”</small></details>`).join('')}</section>`:'';}).join('')||'<p class="small-note">Nenhum termo encontrado.</p>';};
+ search.addEventListener('input',paint);paint();
+ });}
+function setupInlineTerms(form){function update(name){const el=form.querySelector(`[name="${name}"]`),target=form.querySelector(`[data-definition-for="${name}"]`);if(el&&target)target.innerHTML=termHTML(name==='type'?'types':name==='classification'?'classes':'relations',el.value);}
+ for(const name of ['type','classification','relation']){const control=form.querySelector(`[name="${name}"]`);if(control){control.addEventListener('change',()=>update(name));update(name);}}
+}
+
 
 function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3100);}
 function persist(){if(!app)return;$('saveStatus').textContent='Salvando…';clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{
@@ -60,6 +74,7 @@ function handleLibraryAction(action,id){const r=app.reflections.find(x=>x.id===i
 
 function renderWorkspace(){const r=reflect();if(!r)return;
  $('currentTitle').textContent=r.title;$('currentQuestion').textContent=r.question;
+ $('resumeSession').classList.toggle('hidden',r.status!=='pausado');
  for(const el of document.querySelectorAll('[data-view]'))el.classList.toggle('active',el.dataset.view===view);
  $('mapTab').classList.toggle('active',view==='map');$('historyTab').classList.toggle('active',view==='history');
  $('graphPanel').classList.toggle('hidden',view!=='map');$('historyPanel').classList.toggle('hidden',view!=='history');
@@ -80,7 +95,7 @@ const nodeHeights=new Map();
 function nodeMetrics(id){const n=node(id);if(!n)return {h:170};return {h:nodeHeights.get(id)||190};}
 function renderGraph(){const r=reflect();if(!r)return;visible=getVisible();$('graphEmpty').classList.toggle('hidden',!!r.nodes.length);
  $('graphNodes').innerHTML=r.nodes.filter(n=>visible.has(n.id)).map(n=>{const t=TYPES[n.type]||TYPES.premissa,v=voice(n.voiceId),childCount=r.edges.filter(e=>e.source===n.id&&e.relation!=='retorna').length;
- return `<div class="thought-node ${selectedId===n.id?'selected':''} ${n.state==='abandonado'?'inactive':''}" data-node="${safeText(n.id)}" style="left:${n.x}px;top:${n.y}px;--node-color:${t[2]}"><div class="node-inner"><div class="node-label"><span>${safeText(t[1])} ${safeText(t[0])}</span>${childCount?`<span class="collapse-indicator" title="Clique duas vezes no indicador para recolher ou expandir">${n.collapsed?'▸':'▾'} ${childCount}</span>`:''}</div><div class="node-title">${safeText(n.title||t[0])}</div><div class="node-content">${safeText(n.content)}</div><div class="node-footer"><span class="voice-chip"><i class="voice-dot" style="--voice-color:${safeText(v?.color||'#90a6c1')}"></i>${safeText(v?.name||'Sem voz')}</span><span>${safeText(STATES[n.state]||'Ativo')}</span></div></div></div>`;
+ return `<div class="thought-node ${selectedId===n.id?'selected':''} ${n.state==='abandonado'?'inactive':''}" data-node="${safeText(n.id)}" style="left:${n.x}px;top:${n.y}px;--node-color:${t[2]}"><div class="node-inner"><div class="node-label"><span>${safeText(t[1])} ${safeText(t[0])}</span>${childCount?`<span class="collapse-indicator" title="Clique duas vezes no indicador para recolher ou expandir">${n.collapsed?'▸':'▾'} ${childCount}</span>`:''}</div><div class="node-title">${safeText(n.title||t[0])}</div><div class="node-content">${safeText(n.content)}</div><div class="node-footer"><span class="voice-chip"><i class="voice-dot" style="--voice-color:${safeText(v?.color||'#90a6c1')}"></i>${safeText(v?.name||'Sem voz')}</span><span>${n.annotations?.length?`◫ ${n.annotations.length} · `:''}${safeText(STATES[n.state]||'Ativo')}</span></div></div></div>`;
  }).join('');
  for(const el of $('graphNodes').children)nodeHeights.set(el.dataset.node,el.offsetHeight);
  renderEdges();updateTransform();drawMini();$('selectionHint').textContent=selectedId?'Arraste o cabeçalho do bloco para reposicioná-lo.':'Escolha um pensamento para continuar seu raciocínio.';
@@ -111,48 +126,85 @@ function drawMini(){const r=reflect();if(!r||!r.nodes.length)return;const nodes=
 }
 function selectNode(id){selectedId=id;for(const el of $('graphNodes').children)el.classList.toggle('selected',el.dataset.node===id);renderInspector();$('inspector').classList.toggle('hidden',!selectedId||view!=='map');}
 function renderInspector(){const r=reflect(),n=node(selectedId);if(!r||!n)return;
- const t=TYPES[n.type],v=voice(n.voiceId),incomings=r.edges.filter(e=>e.target===n.id),outgoings=r.edges.filter(e=>e.source===n.id);
- $('inspectorContent').innerHTML=`<div class="inspector-body"><div class="info-line" style="color:${t[2]}">${safeText(t[1])} ${safeText(t[0])}</div><h2>${safeText(n.title||t[0])}</h2><div class="content-paragraph">${safeText(n.content)}</div>${n.notes?`<p class="small-note"><b>Observações:</b> ${safeText(n.notes)}</p>`:''}<div class="inline-metas"><span class="tag">${safeText(v?.name||'Sem voz')}</span><span class="tag">${safeText(CLASSES[n.classification]||'Não classificado')}</span><span class="tag">${safeText(STATES[n.state]||'Ativo')}</span></div>
+ const t=TYPES[n.type]||TYPES.comentario,v=voice(n.voiceId),incomings=r.edges.filter(e=>e.target===n.id),outgoings=r.edges.filter(e=>e.source===n.id),notes=n.annotations||[];
+ $('inspectorContent').innerHTML=`<div class="inspector-body"><div class="info-line" style="color:${t[2]}">${safeText(t[1])} ${safeText(t[0])} <button class="inline-help" data-inspector="dictionary">? significado</button></div><h2>${safeText(n.title||t[0])}</h2><div class="content-paragraph">${safeText(n.content)}</div>${n.notes?`<p class="small-note"><b>Contexto:</b> ${safeText(n.notes)}</p>`:''}<div class="inline-metas"><span class="tag">${safeText(v?.name||'Sem voz')}</span><span class="tag">${safeText(CLASSES[n.classification]||'Não classificado')}</span><span class="tag">${safeText(STATES[n.state]||'Ativo')}</span></div>
  <div class="inspector-footer"><button class="secondary small" data-inspector="edit">✎ Editar bloco</button><button class="secondary small" data-inspector="connect">⤳ Conectar</button><button class="secondary small" data-inspector="collapse">${n.collapsed?'▸ Expandir':'▾ Recolher'}</button></div>
+ ${n.type==='pausa'?`<div class="resume-hint"><b>Ponto de retomada</b><p>Este bloco registra onde a conversa parou.</p><button class="secondary small" data-inspector="resumeFrom">↗ Continuar daqui</button></div>`:''}
  <div class="section-title">CONTINUAR A PARTIR DAQUI</div><div class="action-grid">
- ${[['continue','↗ Continuar'],['question','? Questionar'],['object','! Objetar'],['respond','↩ Responder'],['example','▦ Exemplo'],['scenario','◇ Cenário'],['emotion','♡ Emoção'],['conclude','◉ Concluir'],['branch','⑂ Ramificação'],['return','↶ Retornar']].map(([a,l])=>`<button data-quick="${a}">${l}</button>`).join('')}</div>
+ ${[['continue','↗ Continuar'],['question','? Perguntar'],['object','! Objetar'],['respond','↩ Responder'],['example','▦ Exemplo'],['scenario','◇ Cenário'],['emotion','♡ Emoção'],['conclude','◉ Concluir'],['branch','⑂ Ramificação'],['return','↶ Retornar'],['comment','☷ Comentar'],['pause','⏸ Pausar'],['agree','≈ Concordar'],['meta','↹ Sobre o debate'],['plan','☰ Organizar']].map(([a,l])=>`<button data-quick="${a}">${l}</button>`).join('')}</div>
+ <div class="section-title">NOTAS LATERAIS (${notes.length})</div><p class="small-note">Notas são anexadas a este bloco sem virar novos nós nem conexões.</p>
+ <div class="margin-notes">${notes.map(a=>`<div class="margin-note"><div>${safeText(a.text)}</div><small>${niceDate(a.createdAt)}</small><button class="icon-btn" data-remove-note="${safeText(a.id)}" title="Excluir esta nota" aria-label="Excluir nota">×</button></div>`).join('')||'<div class="small-note">Nenhuma nota adicionada.</div>'}</div><button class="secondary small" data-inspector="addNote">＋ Adicionar nota lateral</button>
  <div class="section-title">CONEXÕES (${incomings.length} entrada(s), ${outgoings.length} saída(s))</div><div class="small-note">${outgoings.map(e=>`<div style="margin-bottom:8px">${safeText(RELATIONS[e.relation])} → ${safeText(labelOf(node(e.target)||{title:'Bloco ausente'}))}</div>`).join('')||'Nenhuma conexão de saída.'}</div>
  <div class="inspector-footer"><button class="secondary small" data-inspector="challenge">✦ Desafiar pensamento</button><button class="secondary small danger-outline" data-inspector="delete">✕ Excluir</button></div></div>`;
 }
+function addMarginNote(){const n=node(selectedId);if(!n)return;
+ formModal('Nota lateral',`<p class="small-note">Uma observação associada ao bloco, sem alterar o mapa.</p>${field('text','Anotação','', 'textarea',true,'autofocus maxlength="6000" rows="4"')}`,'Anexar nota',data=>{
+ const text=String(data.get('text')||'').trim();if(!text)return false;
+ if((n.annotations||[]).length>=100){toast('Limite de 100 notas por bloco.');return false;}
+ mutation(()=>{n.annotations||=[];n.annotations.push({id:uid('note'),text,createdAt:now()});n.updatedAt=now();});return true;});}
+function removeMarginNote(id){const n=node(selectedId);if(!n||!n.annotations?.some(a=>a.id===id))return;
+ if(!confirm('Excluir esta nota lateral? Você pode desfazer a ação.'))return;
+ mutation(()=>{n.annotations=n.annotations.filter(a=>a.id!==id);n.updatedAt=now();});toast('Nota removida.');}
+function pauseReflection(){const r=reflect();if(!r)return;
+ openNodeEditor(null,{type:'pausa',parentId:selectedId||undefined,voiceId:r.voices.find(v=>v.id==='observador')?.id||r.voices[0].id,markPaused:true,content:'Parei aqui. Ao voltar, preciso retomar: '});}
+function resumeReflection(){const r=reflect();if(!r)return;mutation(()=>{r.status='em andamento';});const last=[...r.nodes].filter(n=>n.type==='pausa').sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))[0];if(last)focusNode(last.id);toast('Reflexão retomada. Continue a partir do marcador.');}
 function renderHistory(){const r=reflect();if(!r)return;const arr=[...r.nodes].sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt)));
  $('historyList').innerHTML=arr.length?arr.map((n,i)=>{const v=voice(n.voiceId),links=r.edges.filter(e=>e.source===n.id);
- return `<article class="history-item"><div class="meta">${i+1} · ${niceDate(n.createdAt)} · ${safeText(TYPES[n.type]?.[0]||n.type)} · ${safeText(v?.name||'Sem voz')} · ${safeText(STATES[n.state])}</div><h3>${safeText(labelOf(n))}</h3><p>${safeText(n.content)}</p>${n.notes?`<p><i>Observações: ${safeText(n.notes)}</i></p>`:''}<div class="links">${links.map(e=>`${safeText(RELATIONS[e.relation])} → ${safeText(labelOf(node(e.target)||{title:'Bloco ausente'}))}`).join(' · ')||'Nenhuma saída'}</div><button data-jump="${safeText(n.id)}">Ver no mapa →</button></article>`;}).join(''):'<p>Histórico vazio. Crie o primeiro pensamento.</p>';
+ return `<article class="history-item"><div class="meta">${i+1} · ${niceDate(n.createdAt)} · ${safeText(TYPES[n.type]?.[0]||n.type)} · ${safeText(v?.name||'Sem voz')} · ${safeText(STATES[n.state])}</div><h3>${safeText(labelOf(n))}</h3><p>${safeText(n.content)}</p>${n.notes?`<p><i>Observações: ${safeText(n.notes)}</i></p>`:''}${n.annotations?.length?`<div class="history-notes">${n.annotations.map(a=>`<p>◫ Nota: ${safeText(a.text)}</p>`).join('')}</div>`:''}<div class="links">${links.map(e=>`${safeText(RELATIONS[e.relation])} → ${safeText(labelOf(node(e.target)||{title:'Bloco ausente'}))}`).join(' · ')||'Nenhuma saída'}</div><button data-jump="${safeText(n.id)}">Ver no mapa →</button></article>`;}).join(''):'<p>Histórico vazio. Crie o primeiro pensamento.</p>';
 }
 function nextPosition(from){const r=reflect();if(!from){const {width,height}=canvasSize();let x=(width/2-pan.x)/zoom-140,y=(height/2-pan.y)/zoom-100;
  while(r.nodes.some(n=>Math.abs(n.x-x)<210&&Math.abs(n.y-y)<160)){y+=230;}return {x:Math.round(x),y:Math.round(y)};}
  const others=r.edges.filter(e=>e.source===from.id&&e.relation!=='retorna');let x=from.x+355,y=from.y+(others.length?others.length*240-120:0);
  while(r.nodes.some(n=>Math.abs(n.x-x)<240&&Math.abs(n.y-y)<165)){y+=235;}return {x,y};}
 function openNodeEditor(existingId=null,config={}){const r=reflect();if(!r)return;const existing=existingId?node(existingId):null,parent=config.parentId?node(config.parentId):null;
- const defaults={type:config.type||'premissa',title:config.title||'',content:config.content||'',notes:'',classification:'',state:'ativo',voiceId:config.voiceId||parent?.voiceId||r.voices[0]?.id};
- const n=existing||defaults;
+ const defaults={type:config.type||'comentario',title:config.title||'',content:config.content||'',notes:'',classification:config.classification||'',state:'ativo',voiceId:config.voiceId||parent?.voiceId||r.voices[0]?.id};
+ const n=existing||defaults,autoDefault=!existing&&!config.type;
  const label=existing?'Editar pensamento':parent?'Continuar raciocínio':'Novo pensamento';
  const voiceField=selectField('voiceId','Voz interna',r.voices.map(v=>[v.id,v.name]),n.voiceId);
- formModal(label,`<div class="form-grid">${selectField('type','Tipo de bloco',Object.entries(TYPES).map(([k,t])=>[k,t[0]]),n.type)}${voiceField}</div>
- ${field('title','Título breve (opcional)',n.title||'','input',false,'maxlength="250"')}${field('content','Seu pensamento',n.content||'','textarea',true,'autofocus maxlength="30000" rows="5"')}
- <div class="form-grid">${selectField('classification','Natureza da afirmação',Object.entries(CLASSES),n.classification)}${selectField('state','Estado do pensamento',Object.entries(STATES),n.state)}</div>
- ${parent&&!existing?selectField('relation','Esta ideia se conecta como',Object.entries(RELATIONS),config.relation||'continua'):''}
- ${field('notes','Observações e contexto (opcional)',n.notes||'','textarea',false,'maxlength="30000" rows="2"')}
- <div class="field-hint">Dica: hipóteses, opiniões e emoções podem conviver no mesmo mapa sem serem tratadas como fatos.</div>`,existing?'Salvar alterações':'Adicionar ao mapa',data=>{
- const content=data.get('content').trim();if(!content)return toast('Escreva o pensamento antes de salvar.'),false;
+ const selectWithHelp=(name,text,entries,selected)=>`${selectField(name,text,entries,selected)}<div class="term-definition" data-definition-for="${name}"></div>`;
+ openModal(label,`<form id="activeForm"><div class="form-grid">${selectWithHelp('type','Tipo de bloco',Object.entries(TYPES).map(([k,t])=>[k,t[0]]),n.type)}${voiceField}</div>
+ ${field('title','Título breve (opcional)',n.title||'','input',false,'maxlength="250"')}
+ ${field('content','Escreva livremente, sem se preocupar com os termos',n.content||'','textarea',true,'autofocus maxlength="30000" rows="5"')}
+ <div class="assist-box"><div class="assist-heading"><b>✦ Assistente de classificação local</b><label class="assist-toggle"><input type="checkbox" id="autoClassify" ${autoDefault?'checked':''}/> Aplicar sugestões enquanto escrevo</label></div>
+ <div id="inferenceResult" class="assist-result" aria-live="polite">Escreva para receber sugestões.</div><div class="assist-actions"><button type="button" class="secondary small" id="applySuggestion">Aplicar sugestão</button><span class="small-note">Regras simples, sem IA externa. Você tem a palavra final.</span></div></div>
+ <div class="form-grid">${selectWithHelp('classification','Natureza da frase',Object.entries(CLASSES),n.classification)}${selectField('state','Estado do pensamento',Object.entries(STATES),n.state)}</div>
+ ${parent&&!existing?selectWithHelp('relation','Ligação com o bloco anterior',Object.entries(RELATIONS),config.relation||'continua'):''}
+ ${field('notes','Contexto adicional (opcional)',n.notes||'','textarea',false,'maxlength="30000" rows="2"')}
+ <div class="field-hint">Dica: uma hipótese não vira fato por ser sugerida. Uma emoção não é erro lógico. Comentários e pausas também fazem parte do caminho.</div>
+ <div class="modal-actions"><button type="button" class="secondary" data-close-modal>Cancelar</button><button type="submit" class="primary">${existing?'Salvar alterações':'Adicionar ao mapa'}</button></div></form>`,el=>{
+ const form=el.querySelector('#activeForm'),content=form.elements.content,auto=form.querySelector('#autoClassify'),result=form.querySelector('#inferenceResult'),apply=form.querySelector('#applySuggestion');
+ const refresh=()=>{const text=content.value.trim(),guess=suggestThought(text);if(!text){result.textContent='Digite sua ideia para receber uma sugestão. Você também pode escolher o tipo manualmente.';apply.disabled=true;return;}
+ apply.disabled=false;
+ const t=TYPES[guess.type]?.[0]||'Sem sugestão',cls=CLASSES[guess.classification]||'Não classificado';
+ result.innerHTML=`<div><b>Sugestão: ${safeText(t)}</b> <span class="confidence">Confiança ${safeText(guess.confidence)}</span></div><p>${safeText(guess.explanation)}</p><small>Natureza: <b>${safeText(cls)}</b> — ${safeText(guess.classificationExplanation||'')}</small>${guess.alternatives.length?`<div class="other-types">Alternativas: ${guess.alternatives.map(k=>`<button type="button" class="secondary small" data-alternative="${safeText(k)}">${safeText(TYPES[k]?.[0]||k)}</button>`).join('')}</div>`:''}`;
+ if(auto.checked){form.elements.type.value=guess.type;form.elements.classification.value=guess.classification;setupDefinitionFields();}
+ };
+ const setupDefinitionFields=()=>{for(const name of ['type','classification','relation']){const ctl=form.elements[name],target=el.querySelector(`[data-definition-for="${name}"]`);if(ctl&&target)target.innerHTML=termHTML(name==='type'?'types':name==='classification'?'classes':'relations',ctl.value);}};
+ for(const name of ['type','classification'])form.elements[name].addEventListener('change',()=>{auto.checked=false;setupDefinitionFields();});
+ form.elements.relation?.addEventListener('change',setupDefinitionFields);
+ auto.addEventListener('change',refresh);content.addEventListener('input',refresh);
+ apply.addEventListener('click',()=>{if(!content.value.trim())return;const g=suggestThought(content.value);form.elements.type.value=g.type;form.elements.classification.value=g.classification;setupDefinitionFields();toast('Sugestão aplicada. Você ainda pode mudar o tipo.');});
+ el.addEventListener('click',e=>{const b=e.target.closest('[data-alternative]');if(!b)return;form.elements.type.value=b.dataset.alternative;auto.checked=false;setupDefinitionFields();});
+ form.addEventListener('submit',event=>{event.preventDefault();const data=new FormData(form),thought=String(data.get('content')||'').trim();if(!thought)return toast('Escreva o pensamento antes de salvar.');
  const ts=now();let id=existingId;
- mutation(()=>{if(existing){Object.assign(existing,{type:data.get('type'),voiceId:data.get('voiceId'),title:data.get('title').trim(),content,classification:data.get('classification'),state:data.get('state'),notes:data.get('notes').trim(),updatedAt:ts});}
- else {id=uid('node');const pos=nextPosition(parent);r.nodes.push({id,x:pos.x,y:pos.y,type:data.get('type'),voiceId:data.get('voiceId'),title:data.get('title').trim(),content,notes:data.get('notes').trim(),classification:data.get('classification'),state:data.get('state'),collapsed:false,createdAt:ts,updatedAt:ts});
+ mutation(()=>{if(existing){Object.assign(existing,{type:data.get('type'),voiceId:data.get('voiceId'),title:String(data.get('title')||'').trim(),content:thought,classification:data.get('classification'),state:data.get('state'),notes:String(data.get('notes')||'').trim(),updatedAt:ts});}
+ else {id=uid('node');const pos=nextPosition(parent);r.nodes.push({id,x:pos.x,y:pos.y,type:data.get('type'),voiceId:data.get('voiceId'),title:String(data.get('title')||'').trim(),content:thought,notes:String(data.get('notes')||'').trim(),annotations:[],classification:data.get('classification'),state:data.get('state'),collapsed:false,createdAt:ts,updatedAt:ts});
  if(parent)r.edges.push({id:uid('edge'),source:parent.id,target:id,relation:data.get('relation')||config.relation||'continua',createdAt:ts});
- if(config.returnToRoot&&r.nodes[0]?.id!==id)r.edges.push({id:uid('edge'),source:id,target:r.nodes[0].id,relation:'retorna',createdAt:ts});}
+ if(config.returnToRoot&&r.nodes[0]?.id!==id)r.edges.push({id:uid('edge'),source:id,target:r.nodes[0].id,relation:'retorna',createdAt:ts});
+ if(config.markPaused)r.status='pausado';}
  });
- selectNode(id);if(isMobile())$('inspector').classList.add('hidden');toast(existing?'Pensamento atualizado.':'Pensamento adicionado.');return true;
+ closeModal();focusNode(id);if(isMobile())$('inspector').classList.add('hidden');toast(existing?'Pensamento atualizado.':config.markPaused?'Pausa registrada. A reflexão foi marcada como pausada.':'Pensamento adicionado.');
+ });
+ setupDefinitionFields();refresh();
  });}
 const QUICK = {
- continue: n=>({type:n.type==='pergunta'?'premissa':'argumento',relation:'continua'}),question:()=>({type:'pergunta',relation:'continua'}),
- object:()=>({type:'objecao',relation:'contesta',voiceId:'eu2'}),respond:()=>({type:'contra',relation:'contesta'}),
+ continue:()=>({relation:'continua'}),question:()=>({type:'pergunta',relation:'continua'}),
+ object:()=>({type:'objecao',relation:'contesta',voiceId:'eu2'}),respond:()=>({relation:'continua'}),
  example:()=>({type:'exemplo',relation:'exemplifica'}),scenario:()=>({type:'cenario',relation:'continua'}),
  emotion:()=>({type:'emocao',relation:'continua',classification:'sentimento'}),conclude:()=>({type:'provisoria',relation:'reformula'}),
- branch:()=>({type:'pergunta',title:'Nova ramificação',relation:'continua'}),return:()=>({type:'retorno',title:'Retorno ao tema',relation:'continua',returnToRoot:true})};
+ branch:()=>({type:'pergunta',title:'Nova ramificação',relation:'continua'}),return:()=>({type:'retorno',title:'Retorno ao tema',relation:'continua',returnToRoot:true}),
+ comment:()=>({type:'comentario',relation:'continua'}),pause:()=>({type:'pausa',relation:'continua',markPaused:true}),
+ agree:()=>({type:'acordo',relation:'apoia'}),meta:()=>({type:'meta',relation:'continua'}),plan:()=>({type:'roteiro',relation:'continua'})};
 function quick(action){const n=node(selectedId);if(!n)return toast('Selecione um pensamento primeiro.');const config=QUICK[action]?.(n);if(config)openNodeEditor(null,{...config,parentId:n.id});}
 function removeNode(){const n=node(selectedId);if(!n)return;
  if(!confirm(`Excluir o bloco “${labelOf(n)}” e suas conexões?\n\nOs demais blocos serão preservados.`))return;
@@ -246,7 +298,8 @@ function wireGraph(){const viewport=$('graphViewport'),nodes=$('graphNodes'),edg
 }
 function wireEvents(){
  $('brandBtn').onclick=goHome;$('backHome').onclick=goHome;$('themeBtn').onclick=()=>{app.settings.theme=app.settings.theme==='dark'?'light':'dark';applyTheme();persist();};
- $('globalImport').onclick=importJson;$('jsonFileInput').onchange=e=>receiveImport(e.target.files?.[0]);
+ $('globalImport').onclick=importJson;$('globalGlossary').onclick=glossaryModal;$('glossarySidebar').onclick=glossaryModal;
+ $('pauseSession').onclick=pauseReflection;$('resumeSession').onclick=resumeReflection;$('jsonFileInput').onchange=e=>receiveImport(e.target.files?.[0]);
  $('newReflection').onclick=()=>editReflection();$('openDemo').onclick=()=>{const demo=app.reflections.find(r=>r.tags.includes('demonstração'));if(demo)return openReflection(demo.id);
  const r=makeDemo();app.reflections.unshift(r);persist();openReflection(r.id);};
  $('searchReflection').oninput=renderLibrary;$('libraryFilter').onchange=renderLibrary;
@@ -260,16 +313,17 @@ function wireEvents(){
  $('showSidebar').onclick=()=>$('sidebar').classList.toggle('mobile-hidden');
  for(const b of document.querySelectorAll('[data-view]'))b.onclick=()=>changeView(b.dataset.view);
  $('mapTab').onclick=()=>changeView('map');$('historyTab').onclick=()=>changeView('history');
- $('addRoot').onclick=()=>openNodeEditor();$('addToolbar').onclick=()=>openNodeEditor(null,selectedId?{parentId:selectedId,type:'argumento',relation:'continua'}:{});
+ $('addRoot').onclick=()=>openNodeEditor();$('addToolbar').onclick=()=>openNodeEditor(null,selectedId?{parentId:selectedId,relation:'continua'}:{});
  $('emptyAdd').onclick=()=>openNodeEditor();$('historyAdd').onclick=()=>openNodeEditor();
  $('challengeSidebar').onclick=challenge;$('voicesBtn').onclick=editVoices;
  $('centerBtn').onclick=fitMap;$('fitMap').onclick=fitMap;$('focusRootBtn').onclick=()=>{const id=reflect()?.nodes.find(n=>n.type==='pergunta')?.id||reflect()?.nodes[0]?.id;if(id)focusNode(id);};
  $('layoutBtn').onclick=autoLayout;$('zoomIn').onclick=()=>setZoom(zoom*1.2);$('zoomOut').onclick=()=>setZoom(zoom/1.2);
  $('connectToolbar').onclick=()=>connectModal();$('emphasisToggle').onchange=e=>{showMainline=e.target.checked;renderEdges();};
  $('undoBtn').onclick=undoAction;$('redoBtn').onclick=redoAction;
- $('inspectorContent').onclick=e=>{const q=e.target.closest('[data-quick]')?.dataset.quick;if(q)return quick(q);
+ $('inspectorContent').onclick=e=>{const noteId=e.target.closest('[data-remove-note]')?.dataset.removeNote;if(noteId)return removeMarginNote(noteId);const q=e.target.closest('[data-quick]')?.dataset.quick;if(q)return quick(q);
  const action=e.target.closest('[data-inspector]')?.dataset.inspector;if(action==='edit')openNodeEditor(selectedId);if(action==='connect')connectModal();
- if(action==='challenge')challenge();if(action==='collapse')toggleCollapse(selectedId);if(action==='delete')removeNode();};
+ if(action==='challenge')challenge();if(action==='collapse')toggleCollapse(selectedId);if(action==='delete')removeNode();
+ if(action==='addNote')addMarginNote();if(action==='dictionary')glossaryModal();if(action==='resumeFrom'){const id=selectedId;if(reflect()?.status==='pausado')mutation(()=>reflect().status='em andamento');openNodeEditor(null,{type:'comentario',parentId:id});}};
  $('closeInspector').onclick=()=>{selectedId=null;renderWorkspace();};
  $('historyList').onclick=e=>{const jump=e.target.closest('[data-jump]')?.dataset.jump;if(jump)focusNode(jump);};
  $('closeModal').onclick=closeModal;$('modal').onclick=e=>{if(e.target===$('modal')||e.target.closest('[data-close-modal]'))closeModal();};
@@ -278,7 +332,7 @@ function wireEvents(){
  if(!$('modal').classList.contains('hidden')||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||!activeId)return;
  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'){e.preventDefault();undoAction();}
  else if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){e.preventDefault();redoAction();}
- else if(!e.ctrlKey&&!e.altKey&&!e.metaKey&&e.key.toLowerCase()==='n'){e.preventDefault();openNodeEditor(null,selectedId?{parentId:selectedId,type:'argumento'}:{});}
+ else if(!e.ctrlKey&&!e.altKey&&!e.metaKey&&e.key.toLowerCase()==='n'){e.preventDefault();openNodeEditor(null,selectedId?{parentId:selectedId}:{});}
  else if(['Delete','Backspace'].includes(e.key)&&selectedId){e.preventDefault();removeNode();}
  });
  window.addEventListener('resize',()=>{if(activeId&&view==='map')drawMini();});
@@ -286,7 +340,7 @@ function wireEvents(){
  wireGraph();
 }
 function applyTheme(){document.body.dataset.theme=app.settings.theme==='light'?'light':'dark';document.querySelector('meta[name="theme-color"]').content=app.settings.theme==='light'?'#f1f4fa':'#0b1220';}
-async function boot(){try{app=await readApp();if(!app) {app=initialData();await writeApp(app);}if(!Array.isArray(app.reflections))throw Error('Dados locais inválidos.');app.settings||={theme:'dark'};app.reflections=normalizeImported({reflections:app.reflections});}
+async function boot(){try{app=await readApp();if(!app) {app=initialData();await writeApp(app);}if(!Array.isArray(app.reflections))throw Error('Dados locais inválidos.');app.settings||={theme:'dark'};app.reflections=normalizeImported({reflections:app.reflections});app.schemaVersion=2;}
  catch(e){console.error('Erro ao carregar',e);if(confirm('Não foi possível ler os dados locais. Deseja abrir com uma biblioteca temporária? Não será apagado nenhum backup externo.'))app=initialData();else {document.body.innerHTML='<main style="font:16px sans-serif;padding:32px">Não foi possível acessar o armazenamento local. Habilite IndexedDB no navegador e recarregue.</main>';return;}}
  applyTheme();wireEvents();renderLibrary();
  if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('Offline indisponível:',err));
