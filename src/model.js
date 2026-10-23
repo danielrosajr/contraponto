@@ -1,3 +1,4 @@
+import {normalizeSpeechLanguage} from './language.js';
 import {normalizeLiveDebates} from './live.js';
 import {validFallacies} from './fallacies.js';
 export const TYPES = {
@@ -70,7 +71,7 @@ export function makeDemo() {
   r.nodes[11].annotations=[{id:uid('note'),text:'Esta observação não precisa virar outro argumento. É apenas uma nota anexada ao bloco.',createdAt:ts}];
   return r;
 }
-export function initialData() { return {schemaVersion:5,settings:{theme:'dark',lastSeenVersion:null,tutorialCompleted:false},reflections:[makeDemo()]}; }
+export function initialData() { return {schemaVersion:6,settings:{theme:'dark',lastSeenVersion:null,tutorialCompleted:false,lastSpeechLanguage:'pt-BR'},reflections:[makeDemo()]}; }
 export function safeText(s) {return String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');}
 export function niceDate(iso) { return iso ? new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(iso)) : '—'; }
 export function cleanFilename(s){return String(s||'reflexao').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-|-$/g,'').toLowerCase().slice(0,65) || 'reflexao';}
@@ -87,9 +88,9 @@ export function normalizeImported(obj) {
       unique.add(n.id);
       nodes.push({id:n.id.slice(0,130),type:TYPES[n.type]?n.type:'premissa',title:String(n.title||'').slice(0,250),content:String(n.content||'').slice(0,30000),
         notes:String(n.notes||'').slice(0,30000),classification: n.classification in CLASSES ? n.classification:'',state:n.state in STATES ?n.state:'ativo',
-        voiceId:String(n.voiceId||'eu1'),x:Number.isFinite(n.x)?Math.max(-100000,Math.min(100000,n.x)):0,
+        voiceId:String(n.voiceId||'eu1'),language:n.language?normalizeSpeechLanguage(n.language):null,x:Number.isFinite(n.x)?Math.max(-100000,Math.min(100000,n.x)):0,
         y:Number.isFinite(n.y)?Math.max(-100000,Math.min(100000,n.y)):0,
-        liveSessionId:typeof n.liveSessionId==='string'?n.liveSessionId:null,origin:n.origin?.kind==='live'?{kind:'live',sessionId:String(n.origin.sessionId||'').slice(0,130),segmentId:String(n.origin.segmentId||'').slice(0,130)}:null,
+        liveSessionId:typeof n.liveSessionId==='string'?n.liveSessionId:null,origin:n.origin?.kind==='live'?{kind:'live',sessionId:String(n.origin.sessionId||'').slice(0,130),segmentId:String(n.origin.segmentId||'').slice(0,130),language:normalizeSpeechLanguage(n.origin.language||n.language)}:null,
         discussion:Array.isArray(n.discussion)?n.discussion.slice(0,30).map(d=>({id:String(d?.id||uid('mark')).slice(0,130),key:['conversar','pendente','incomoda','mudanca','sentimento'].includes(d?.key)?d.key:'conversar',label:String(d?.label||'').slice(0,150),note:String(d?.note||'').slice(0,1500),createdAt:String(d?.createdAt||now())})):[],
         annotations:Array.isArray(n.annotations)?n.annotations.slice(0,100).map(a=>({id:String(a?.id||uid('note')).slice(0,130),text:String(a?.text||'').slice(0,6000),createdAt:a?.createdAt||now()})).filter(a=>a.text.trim()):[],
         fallacies:validFallacies(n.fallacies),suggestedGap:n.suggestedGap&&typeof n.suggestedGap==='object'?{from:String(n.suggestedGap.from||''),to:String(n.suggestedGap.to||''),durationMs:Number(n.suggestedGap.durationMs)||0}:null,collapsed:!!n.collapsed,createdAt:n.createdAt||now(),updatedAt:n.updatedAt||now()});

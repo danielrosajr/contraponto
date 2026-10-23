@@ -1,3 +1,5 @@
+import {EN_TYPE_RULES,EN_CLASS_RULES} from './inference-en.js';
+import {guessThoughtLanguage,isEnglishLanguage} from './language.js';
 // Heurísticas transparentes e locais. Sugestões, nunca classificação factual/ética automática.
 // Não classificam se uma ideia é verdadeira, correta, saudável ou moralmente aceitável.
 const has=(t,re)=>re.test(t);
@@ -34,15 +36,18 @@ const CLASS_RULES=[
 function evaluate(text,rules,defaultType){const matchesList=matches(text,rules),scores=new Map();
  for(const rule of matchesList){const item=scores.get(rule.type)||{type:rule.type,score:0,reasons:[]};item.score+=rule.weight;item.reasons.push(rule.reason);scores.set(rule.type,item);}
  const arr=[...scores.values()].sort((a,b)=>b.score-a.score);return arr.length?arr:[{type:defaultType,score:0,reasons:['Não há pistas fortes; escolha livremente o tipo que melhor descreve sua intenção.']}];}
-export function suggestThought(input){const original=String(input||'').trim(),t=normalize(original);
+export function suggestThought(input,locale='auto'){const original=String(input||'').trim(),t=normalize(original);
+ const lang=locale==='auto'?guessThoughtLanguage(original):locale;
+ const typeRules=isEnglishLanguage(lang)?EN_TYPE_RULES:TYPE_RULES;
+ const classRules=isEnglishLanguage(lang)?EN_CLASS_RULES:CLASS_RULES;
  if(!t)return {type:null,classification:null,confidence:'sem texto',explanation:'Escreva algo para receber sugestões.',alternatives:[]};
- const types=evaluate(t,TYPE_RULES,'comentario');
+ const types=evaluate(t,typeRules,'comentario');
  if(types[0]?.score===0 && t.split(/\s+/).length>=9 && !/[?？]\s*$/.test(original)){
    types[0]={type:'premissa',score:1,reasons:['Frase declarativa extensa sem pistas específicas: pode servir como ponto de partida. Também pode ser apenas um comentário.']};
    types.push({type:'comentario',score:0,reasons:['Observação livre, caso não deseje formular uma afirmação.']});
  }
  // Um ponto de interrogação final sugere pergunta, exceto quando prevalece uma regra mais explícita.
- if(/[?？]\s*$/.test(original)){const p=types.find(r=>r.type==='pergunta');if(p){p.score+=4;p.reasons.push('A frase termina com ponto de interrogação.');}else types.push({type:'pergunta',score:5,reasons:['A frase termina com ponto de interrogação.']});types.sort((a,b)=>b.score-a.score);}
- const classes=evaluate(t,CLASS_RULES,'');
+ if(/[?？]\s*$/.test(original) && !(isEnglishLanguage(lang)&&/^what if\b/i.test(original))){const p=types.find(r=>r.type==='pergunta');if(p){p.score+=4;p.reasons.push('A frase termina com ponto de interrogação.');}else types.push({type:'pergunta',score:5,reasons:['A frase termina com ponto de interrogação.']});types.sort((a,b)=>b.score-a.score);}
+ const classes=evaluate(t,classRules,'');
  const best=types[0];return {type:best.type,classification:classes[0].type,confidence:best.score>=6?'forte':best.score>=3?'moderada':'fraca',explanation:best.reasons[0],classificationExplanation:classes[0].reasons[0],alternatives:types.slice(1,4).map(x=>x.type)};
 }

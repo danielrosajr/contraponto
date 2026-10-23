@@ -1,3 +1,24 @@
+# Changelog — CONTRAPONTO
+
+## [0.5.1] — 23/10/2026 · Debate Bilíngue
+
+### Novo
+- Seletor por sessão: `pt-BR`, `en-US` e `en-GB`, mantendo a interface em português.
+- Reconhecimento de fala configurado para o idioma selecionado, sujeito à disponibilidade do navegador.
+- Classificador local em inglês: perguntas, cenários, premissas, objeções, argumentos, emoções, comentários e pausas.
+- Pistas em inglês de possíveis generalizações, falsos dilemas e respostas *tu quoque* (sem diagnóstico automático de falácias).
+- Idioma salvo em sessões, turnos e blocos convertidos, e mantido em backup e exportações textuais.
+- Preferência de idioma lembrada no próprio navegador para a próxima sessão.
+- Tutorial e ajuda do modo ao vivo atualizados; cache offline `contraponto-0.5.1`.
+
+### Compatibilidade e cuidados
+- Backups sem idioma continuam compatíveis (padrão `pt-BR`).
+- Um idioma por sessão; a alternância automática no meio da fala não é suportada.
+- A transcrição automática pode depender de processamento externo. O áudio original nunca é traduzido.
+- Testes automatizados e de interface simulada; validar microfone e transcrição em aparelhos reais.
+
+---
+
 # CONTRAPONTO — Histórico de versões
 
 ## v0.5.0 — Debate ao Vivo (23/10/2026)

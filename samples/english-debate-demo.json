@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 6,
+  "reflections": [
+    {
+      "id": "reflection_a4940f65-3663-4aba-a0d8-5b16e4017f60",
+      "title": "English inner debate — Demo",
+      "question": "What does it mean to be affected by something I do not know about?",
+      "description": "Exemplo fictício para testar o Debate Bilíngue.",
+      "status": "em andamento",
+      "archived": false,
+      "tags": [],
+      "createdAt": "2026-10-23T05:39:36.885Z",
+      "updatedAt": "2026-10-23T05:39:36.885Z",
+      "completedAt": null,
+      "closure": null,
+      "closures": [],
+      "sessions": [],
+      "liveDebates": [
+        {
+          "id": "live_724d3b69-b020-4c44-a18d-dfac347eeb6b",
+          "anchorNodeId": "node_d7fc3f7c-2ecb-45f3-80fe-6d6d827a7410",
+          "title": "A conversation in English",
+          "language": "en-US",
+          "startedAt": "2026-10-23T09:00:00.000Z",
+          "endedAt": "2026-10-23T09:03:00.000Z",
+          "status": "finished",
+          "finishReason": "provisoria",
+          "finishNote": "",
+          "audioRequested": false,
+          "audioAvailable": false,
+          "audioMime": "",
+          "transcriptionRequested": false,
+          "segments": [
+            {
+              "id": "turn_c230c852-3d25-4319-9e8e-5067b9fe5a66",
+              "voiceId": "eu1",
+              "startedAt": "2026-10-23T09:00:00.000Z",
+              "endedAt": null,
+              "turnMs": 19000,
+              "speechMs": 11000,
+              "language": "en-US",
+              "text": "I think that knowing something changes how I feel about it.",
+              "fallacies": [],
+              "mappedNodeId": "node_2af5c31a-2dd8-40bf-ad75-2eeb668412a8"
+            },
+            {
+              "id": "turn_b5b8db3d-37d3-4aed-b054-51b79bc0da9d",
+              "voiceId": "eu2",
+              "startedAt": "2026-10-23T09:01:00.000Z",
+              "endedAt": null,
+              "turnMs": 19000,
+              "speechMs": 11000,
+              "language": "en-US",
+              "text": "But what if the consequences exist even if you never find out?",
+              "fallacies": [],
+              "mappedNodeId": "node_62b3de08-7c13-48a8-9d0b-ea4157e721d3"
+            },
+            {
+              "id": "turn_8507cbd7-1b51-4948-9ae0-7d24104681a0",
+              "voiceId": "eu1",
+              "startedAt": "2026-10-23T09:02:00.000Z",
+              "endedAt": null,
+              "turnMs": 19000,
+              "speechMs": 11000,
+              "language": "en-US",
+              "text": "I feel worried about that possibility. Maybe those are two different questions.",
+              "fallacies": [],
+              "mappedNodeId": "node_c749d990-aa60-416e-91c7-f1fabd46cecc"
+            }
+          ],
+          "voicesAtStart": [
+            "eu1",
+            "eu2",
+            "observador"
+          ],
+          "createdNodeIds": [
+            "node_2af5c31a-2dd8-40bf-ad75-2eeb668412a8",
+            "node_62b3de08-7c13-48a8-9d0b-ea4157e721d3",
+            "node_c749d990-aa60-416e-91c7-f1fabd46cecc"
+          ]
+        }
+      ],
+      "voices": [
+        {
+          "id": "eu1",
+          "name": "Eu inicial",
+          "color": "#6db5ff"
+        },
+        {
+          "id": "eu2",
+          "name": "Eu crítico",
+          "color": "#f3a382"
+        },
+        {
+          "id": "observador",
+          "name": "Observador",
+          "color": "#bca4fb"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "node_d7fc3f7c-2ecb-45f3-80fe-6d6d827a7410",
+          "type": "pergunta",
+          "title": "Pergunta principal",
+          "content": "What does it mean to be affected by something I do not know about?",
+          "notes": "",
+          "classification": "",
+          "state": "ativo",
+          "voiceId": "eu1",
+          "x": 0,
+          "y": 0,
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:39:36.885Z",
+          "updatedAt": "2026-10-23T05:39:36.885Z"
+        },
+        {
+          "id": "node_02a7e26c-e342-47be-a219-81b0340c7e22",
+          "type": "aovivo",
+          "title": "🎙 Debate ao Vivo",
+          "content": "A conversation in English",
+          "notes": "Marcador de origem: os próximos blocos surgiram em uma sessão ao vivo.",
+          "classification": "",
+          "state": "ativo",
+          "voiceId": "eu1",
+          "x": 360,
+          "y": 0,
+          "collapsed": false,
+          "createdAt": "2026-10-23T09:03:00.000Z",
+          "updatedAt": "2026-10-23T09:03:00.000Z",
+          "liveSessionId": "live_724d3b69-b020-4c44-a18d-dfac347eeb6b",
+          "annotations": [],
+          "discussion": [],
+          "fallacies": []
+        },
+        {
+          "id": "node_2af5c31a-2dd8-40bf-ad75-2eeb668412a8",
+          "type": "premissa",
+          "title": "",
+          "content": "I think that knowing something changes how I feel about it.",
+          "notes": "Capturado no Debate ao Vivo. Transcrição automática pode conter erros.",
+          "voiceId": "eu1",
+          "language": "en-US",
+          "classification": "opiniao",
+          "state": "ativo",
+          "x": 715,
+          "y": -40,
+          "collapsed": false,
+          "createdAt": "2026-10-23T09:00:00.000Z",
+          "updatedAt": "2026-10-23T09:03:00.000Z",
+          "origin": {
+            "kind": "live",
+            "sessionId": "live_724d3b69-b020-4c44-a18d-dfac347eeb6b",
+            "segmentId": "turn_c230c852-3d25-4319-9e8e-5067b9fe5a66",
+            "language": "en-US"
+          },
+          "annotations": [],
+          "discussion": [],
+          "fallacies": []
+        },
+        {
+          "id": "node_62b3de08-7c13-48a8-9d0b-ea4157e721d3",
+          "type": "cenario",
+          "title": "",
+          "content": "But what if the consequences exist even if you never find out?",
+          "notes": "Capturado no Debate ao Vivo. Transcrição automática pode conter erros.",
+          "voiceId": "eu2",
+          "language": "en-US",
+          "classification": "hipotese",
+          "state": "ativo",
+          "x": 1070,
+          "y": 80,
+          "collapsed": false,
+          "createdAt": "2026-10-23T09:01:00.000Z",
+          "updatedAt": "2026-10-23T09:03:00.000Z",
+          "origin": {
+            "kind": "live",
+            "sessionId": "live_724d3b69-b020-4c44-a18d-dfac347eeb6b",
+            "segmentId": "turn_b5b8db3d-37d3-4aed-b054-51b79bc0da9d",
+            "language": "en-US"
+          },
+          "annotations": [],
+          "discussion": [],
+          "fallacies": []
+        },
+        {
+          "id": "node_c749d990-aa60-416e-91c7-f1fabd46cecc",
+          "type": "emocao",
+          "title": "",
+          "content": "I feel worried about that possibility. Maybe those are two different questions.",
+          "notes": "Capturado no Debate ao Vivo. Transcrição automática pode conter erros.",
+          "voiceId": "eu1",
+          "language": "en-US",
+          "classification": "sentimento",
+          "state": "ativo",
+          "x": 1425,
+          "y": 40,
+          "collapsed": false,
+          "createdAt": "2026-10-23T09:02:00.000Z",
+          "updatedAt": "2026-10-23T09:03:00.000Z",
+          "origin": {
+            "kind": "live",
+            "sessionId": "live_724d3b69-b020-4c44-a18d-dfac347eeb6b",
+            "segmentId": "turn_8507cbd7-1b51-4948-9ae0-7d24104681a0",
+            "language": "en-US"
+          },
+          "annotations": [],
+          "discussion": [],
+          "fallacies": []
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_cd904f7b-5b02-4610-96da-66ea9694197b",
+          "source": "node_d7fc3f7c-2ecb-45f3-80fe-6d6d827a7410",
+          "target": "node_02a7e26c-e342-47be-a219-81b0340c7e22",
+          "relation": "continua",
+          "createdAt": "2026-10-23T09:03:00.000Z"
+        },
+        {
+          "id": "edge_8ba1efe6-d908-4d97-978a-df27ba31f40f",
+          "source": "node_02a7e26c-e342-47be-a219-81b0340c7e22",
+          "target": "node_2af5c31a-2dd8-40bf-ad75-2eeb668412a8",
+          "relation": "continua",
+          "createdAt": "2026-10-23T09:03:00.000Z"
+        },
+        {
+          "id": "edge_2660c526-a55d-41c4-b512-25f3557e6c1e",
+          "source": "node_2af5c31a-2dd8-40bf-ad75-2eeb668412a8",
+          "target": "node_62b3de08-7c13-48a8-9d0b-ea4157e721d3",
+          "relation": "continua",
+          "createdAt": "2026-10-23T09:03:00.000Z"
+        },
+        {
+          "id": "edge_d0da6897-0bc2-412c-9cf1-5cffb75b30be",
+          "source": "node_62b3de08-7c13-48a8-9d0b-ea4157e721d3",
+          "target": "node_c749d990-aa60-416e-91c7-f1fabd46cecc",
+          "relation": "continua",
+          "createdAt": "2026-10-23T09:03:00.000Z"
+        }
+      ]
+    }
+  ]
+}

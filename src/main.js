@@ -676,9 +676,9 @@ function wireEvents(){
  wireGraph();
 }
 function applyTheme(){document.body.dataset.theme=app.settings.theme==='light'?'light':'dark';document.querySelector('meta[name="theme-color"]').content=app.settings.theme==='light'?'#f1f4fa':'#0b1220';}
-async function boot(){try{app=await readApp();if(!app) {app=initialData();await writeApp(app);}if(!Array.isArray(app.reflections))throw Error('Dados locais inválidos.');app.settings||={theme:'dark'};app.reflections=normalizeImported({reflections:app.reflections});app.schemaVersion=5;}
+async function boot(){try{app=await readApp();if(!app) {app=initialData();await writeApp(app);}if(!Array.isArray(app.reflections))throw Error('Dados locais inválidos.');app.settings||={theme:'dark'};app.reflections=normalizeImported({reflections:app.reflections});app.schemaVersion=6;}
  catch(e){console.error('Erro ao carregar',e);if(confirm('Não foi possível ler os dados locais. Deseja abrir com uma biblioteca temporária? Não será apagado nenhum backup externo.'))app=initialData();else {document.body.innerHTML='<main style="font:16px sans-serif;padding:32px">Não foi possível acessar o armazenamento local. Habilite IndexedDB no navegador e recarregue.</main>';return;}}
- applyTheme();liveUI=new LiveUI({getReflection:reflect,save:persist,mutate:mutation,focusNode,toast,openModal,closeModal});wireEvents();renderLibrary();if(app.settings.lastSeenVersion!==APP_VERSION){toast(`CONTRAPONTO v${APP_VERSION}: Debate ao Vivo, transcrição, conversão em mapa e estatísticas. Veja Novidades.`,{duration:7000});}
+ applyTheme();liveUI=new LiveUI({getReflection:reflect,getSettings:()=>app.settings,save:persist,mutate:mutation,focusNode,toast,openModal,closeModal});wireEvents();renderLibrary();if(app.settings.lastSeenVersion!==APP_VERSION){toast(`CONTRAPONTO v${APP_VERSION}: Debate Bilíngue: transcrição e classificação em português ou inglês. Veja Novidades.`,{duration:7000});}
  if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('Offline indisponível:',err));
 }
 boot();
