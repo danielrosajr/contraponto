@@ -1,20 +1,37 @@
 # CONTRAPONTO — Meu Laboratório de Pensamentos
 
-**Versão 0.3.0 — Fio do Raciocínio** · Gratuito · Português brasileiro · GitHub Pages · Sem login, backend ou IA externa
+**Versão 0.3.1 — Leitura Guiada** · Gratuito · Português brasileiro · GitHub Pages · Sem login, backend ou IA externa
 
 Aplicativo web/PWA para organizar debates consigo mesmo num mapa visual de blocos conectados, com múltiplas vozes, classificação local de frases, minidicionário, histórico, ramificações, notas, falácias registradas manualmente, sessões e relatórios. Dados em **IndexedDB**, no navegador. Exporta/importa JSON, gera Markdown, SVG, PNG e prompts para IA. Nenhuma reflexão é enviada automaticamente a servidores.
 
 ## Começar no Ubuntu
 
 ```bash
-unzip CONTRAPONTO-v0.3.0.zip
-cd CONTRAPONTO-v0.3.0
+unzip CONTRAPONTO-v0.3.1.zip
+cd CONTRAPONTO-v0.3.1
 python3 -m http.server 8080
 ```
 
 Abra `http://localhost:8080`. Não abra pelo `file://`: módulos e PWA dependem de HTTP ou HTTPS. A instalação/cache offline precisa do primeiro carregamento com internet (ou local). Para testes automatizados: `npm test` (Node.js 20+; não precisa `npm install`).
 
-## O que entrou na v0.3.0
+## O que mudou na v0.3.1 — Modo Leitura e atalhos corrigidos
+
+O modo mapa continua oferecendo arraste, reorganização e edição. O novo **Modo Leitura** é uma camada separada e quase em tela cheia, com o texto do bloco **sem truncamento**, sua voz, tipo, data e notas. Por ficar fora da área de arraste, seus botões de navegação não arrastam os cartões.
+
+### Como usar no computador
+
+1. Abra uma reflexão, selecione um bloco e clique em **▣ Modo leitura** na barra superior, **▣ Ler** na navegação flutuante ou **▣ Ler ampliado** no inspetor. Você também pode dar **duplo clique** diretamente no bloco.
+2. No Modo Leitura, pressione **→** para avançar ou **←** para voltar, ou use os botões fixos no rodapé. Quando houver mais de uma saída, escolha a ramificação clicando no item desejado ou pressionando **1** a **9**.
+3. Pressione **Esc** ou clique em **Voltar ao mapa**. O bloco atual continuará selecionado, e o mapa centraliza nele. Para editar em vez de ler, clique **Editar bloco** dentro do leitor ou use o inspetor no mapa.
+4. No mapa normal, ao clicar num bloco, o foco vai para o mapa e **← / →** também funcionam sem exigir Modo Leitura. **Enter** com o mapa focado abre o leitor do bloco selecionado.
+
+No celular, o Modo Leitura usa os mesmos botões, com tamanho adequado para toque. Sem teclado físico, escolha a ramificação tocando na alternativa. A navegação antiga do mapa continua disponível.
+
+**Restrições:** o leitor navega por *conexões verdadeiras*; não inventa ordem onde há várias possibilidades. Ao retornar, prioriza o caminho realmente percorrido. O duplo clique, que antes abria a edição, agora abre o Modo Leitura; use **Editar bloco** para modificar o conteúdo.
+
+**Dados:** não há migração ou alteração no schemaVersion 3, nem envios externos. O cache offline mudou para `contraponto-0.3.1`; confirme a atualização do site/aba após o deploy.
+
+## Funcionalidades trazidas na v0.3.0
 
 ### 1. Navegação por setas
 
@@ -54,24 +71,24 @@ Clique **♟ Prompt de xadrez** em Organizar ou **Exportar → Prompt de xadrez*
 
 ## Publicar no GitHub Pages
 
-Se você já tem o repositório `contraponto`, **substitua** os arquivos da raiz pelos do ZIP, incluindo pastas `src/`, `tests/`, `samples/`, `assets/` e `.github/`. Não copie a pasta `CONTRAPONTO-v0.3.0` como subdiretório extra. Não é necessário remover arquivos antigos, exceto arquivos temporários locais que não pertenciam ao repositório.
+Se você já tem o repositório `contraponto`, **substitua** os arquivos da raiz pelos do ZIP, incluindo pastas `src/`, `tests/`, `samples/`, `assets/` e `.github/`. Não copie a pasta `CONTRAPONTO-v0.3.1` como subdiretório extra. Não é necessário remover arquivos antigos, exceto arquivos temporários locais que não pertenciam ao repositório.
 
-**Branch:** `feat/contraponto-v0.3.0-fio-do-raciocinio`  
-**Commit:** `feat: adicionar navegacao guiada sessoes falacias e relatorios`  
-**Tag:** `v0.3.0`  
-**Release:** `CONTRAPONTO v0.3.0 — Fio do Raciocínio`
+**Branch:** `fix/contraponto-v0.3.1-leitura-guiada`  
+**Commit:** `fix: corrigir navegacao no desktop e adicionar modo leitura`  
+**Tag:** `v0.3.1`  
+**Release:** `CONTRAPONTO v0.3.1 — Leitura Guiada`
 
 ```bash
 git checkout main
 git pull
-git checkout -b feat/contraponto-v0.3.0-fio-do-raciocinio
+git checkout -b fix/contraponto-v0.3.1-leitura-guiada
 # Copie o conteúdo descompactado para a raiz do clone
 git add .
-git commit -m "feat: adicionar navegacao guiada sessoes falacias e relatorios"
-git push -u origin feat/contraponto-v0.3.0-fio-do-raciocinio
+git commit -m "fix: corrigir navegacao no desktop e adicionar modo leitura"
+git push -u origin fix/contraponto-v0.3.1-leitura-guiada
 ```
 
-Abra um pull request, faça o merge para `main`, crie a tag `v0.3.0` e publique o release. Em **Settings → Pages → Source**, selecione **GitHub Actions**; o arquivo `.github/workflows/deploy.yml` executa a publicação. Após o deploy, atualize a página novamente se o service worker ainda mostrar uma interface anterior.
+Abra um pull request, faça o merge para `main`, crie a tag `v0.3.1` e publique o release. Em **Settings → Pages → Source**, selecione **GitHub Actions**; o arquivo `.github/workflows/deploy.yml` executa a publicação. Após o deploy, atualize a página novamente se o service worker ainda mostrar uma interface anterior.
 
 ## Arquivos importantes
 
@@ -87,4 +104,13 @@ Abra um pull request, faça o merge para `main`, crie a tag `v0.3.0` e publique 
 
 ## Verificações executadas
 
-**30 testes automatizados de Node.js passaram**, incluindo caminhos com ramificações/ciclos, gaps temporais, relatórios, falácias e backup antigo. Também executamos **smoke tests da interface no Chromium** utilizando uma montagem inline e **IndexedDB simulado**, pois o navegador de teste bloqueia navegação para endereços HTTP/HTTPS locais. Testados: abertura da biblioteca, seleção e escolha de ramificação, retomada com ênfase temporária, detecção/inserção confirmada de pausa, relatório/conclusão, falácia e prompt de xadrez. Ainda **não** foram validados em um deploy real o IndexedDB persistente, o cache offline e a interação touch em dispositivo físico. Essas validações são recomendadas antes de considerar a versão estável.
+**Na v0.3.0, 30 testes automatizados de Node.js passaram**, incluindo caminhos com ramificações/ciclos, gaps temporais, relatórios, falácias e backup antigo. Também executamos **smoke tests da interface no Chromium** utilizando uma montagem inline e **IndexedDB simulado**, pois o navegador de teste bloqueia navegação para endereços HTTP/HTTPS locais. Testados: abertura da biblioteca, seleção e escolha de ramificação, retomada com ênfase temporária, detecção/inserção confirmada de pausa, relatório/conclusão, falácia e prompt de xadrez. Ainda **não** foram validados em um deploy real o IndexedDB persistente, o cache offline e a interação touch em dispositivo físico. Essas validações são recomendadas antes de considerar a versão estável.
+
+
+## Testes específicos da v0.3.1
+
+Executados **35 testes Node** (todos passaram), incluindo escolha de bifurcações, retorno pelo histórico de navegação e conexões circulares. Executados também testes de interface em Chromium com HTML/JS montado em memória e armazenamento simulado, nas dimensões **1280×780** e **390×640**: abertura por duplo clique e botão, leitura com texto integral, avançar, voltar, escolher alternativas, teclas ←/→ e 1, Esc, fechar, navegar usando os controles do mapa e setas no modo normal. Capturas em `samples/leitura-*.png`.
+
+A execução direta por HTTP local no navegador automatizado é bloqueada por uma política do ambiente. Portanto ainda é preciso validar **IndexedDB real, service worker e teclado no deploy publicado**. A montagem de testes não equivale a uma validação de ponta a ponta no GitHub Pages.
+
+Arquivos alterados/criados em relação à v0.3.0: `index.html`, `style.css`, `src/main.js`, `src/reading.js` (novo), `sw.js`, `package.json`, `tests/reading.test.mjs` (novo), README, CHANGELOG e capturas de exemplo. Mantenha os demais arquivos do projeto.

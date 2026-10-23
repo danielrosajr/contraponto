@@ -1,1 +1,1 @@
-{"name":"contraponto","private":true,"version":"0.3.0","type":"module","scripts":{"test":"node --test tests/*.test.mjs"},"description":"Editor visual de debates internos, 100% local e estático."}
+{"name":"contraponto","private":true,"version":"0.3.1","type":"module","scripts":{"test":"node --test tests/*.test.mjs"},"description":"Editor visual de debates internos, 100% local e estático."}

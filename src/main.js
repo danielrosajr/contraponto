@@ -8,11 +8,13 @@ import {neighbours,pathTo,pathRecap,suspectedGaps,branchIdFor,formatDuration} fr
 import {FALLACIES,FALLACY_STATUSES} from './fallacies.js';
 import {metricsFor,reportMarkdown} from './metrics.js';
 import {chessPromptFor} from './chess.js';
+import {readingStep} from './reading.js';
 
 const $=id=>document.getElementById(id);
 let app, activeId=null, selectedId=null, view='map', pan={x:100,y:100},zoom=1, visible=new Set(), showMainline=true;
 let undo=[],redo=[],saveTimer=null,toastTimer=null,modalCleanup=null,miniExtent=null,edgeFocusId=null;
 let journeyNodes=new Set(),journeyEdges=new Set(),journeyTimer=null,tracker=null,trackingTimer=null,navHistory=[];
+let readingMode=false,readerOptions=[],readerDirection=null;
 const IDLE_MS=5*60000;
 const isMobile=()=>innerWidth<=800;
 const reflect=()=>app.reflections.find(r=>r.id===activeId);
@@ -108,8 +110,8 @@ function renderLibrary(){ $('library').classList.remove('hidden');$('workspace')
  $('reflectionCount').textContent=app.reflections.length;
  $('reflectionGrid').innerHTML=arr.length?arr.map(r=>`<article class="reflection-card" data-ref="${safeText(r.id)}"><div class="reflection-card-top"><span class="status-pill ${r.status==='concluído'?'done':r.status==='pausado'?'paused':''}">${safeText(r.archived?'Arquivada':r.status)}</span><div class="card-menu"><button class="icon-btn" data-refmenu="${safeText(r.id)}" aria-label="Opções da reflexão">⋯</button><div class="menu-dropdown hidden" id="menu-${safeText(r.id)}"><button data-libaction="edit">✎ Editar</button><button data-libaction="duplicate">▣ Duplicar</button><button data-libaction="archive">${r.archived?'↩ Desarquivar':'▤ Arquivar'}</button><button data-libaction="delete">✕ Excluir</button></div></div></div><h3>${safeText(r.title)}</h3><p class="question">${safeText(r.question)}</p><div class="tags">${r.tags.slice(0,4).map(t=>`<span class="tag">${safeText(t)}</span>`).join('')||'<span class="tag">Sem etiquetas</span>'}</div><div class="card-footer"><small>${r.nodes.length} blocos · ${niceDate(r.updatedAt)}</small><button data-libaction="open">Continuar →</button></div></article>`).join(''):`<div class="empty-library"><h3>Sem reflexões nesta visualização</h3><p>Crie sua primeira reflexão ou mude o filtro.</p><button class="primary" data-library-create>＋ Nova reflexão</button></div>`;
 }
-function goHome(){stopTracking();clearJourneyHighlight();activeId=null;selectedId=null;closeModal();undo=[];redo=[];$('sidebar').classList.remove('collapsed');$('sidebar').classList.toggle('mobile-hidden',isMobile());renderLibrary();}
-function openReflection(id){const r=app.reflections.find(r=>r.id===id);if(!r)return;stopTracking();clearJourneyHighlight();closeModal();activeId=id;selectedId=null;undo=[];redo=[];navHistory=[];view='map';pan={x:50,y:50};zoom=1;
+function goHome(){closeReader(false);stopTracking();clearJourneyHighlight();activeId=null;selectedId=null;closeModal();undo=[];redo=[];$('sidebar').classList.remove('collapsed');$('sidebar').classList.toggle('mobile-hidden',isMobile());renderLibrary();}
+function openReflection(id){const r=app.reflections.find(r=>r.id===id);if(!r)return;closeReader(false);stopTracking();clearJourneyHighlight();closeModal();activeId=id;selectedId=null;undo=[];redo=[];navHistory=[];view='map';pan={x:50,y:50};zoom=1;
  $('library').classList.add('hidden');$('workspace').classList.remove('hidden');$('sidebar').classList.toggle('mobile-hidden',isMobile());$('sidebar').classList.remove('collapsed');renderWorkspace();requestAnimationFrame(()=>fitMap());startTracking();}
 function editReflection(id){const r=id?app.reflections.find(x=>x.id===id):null;
  formModal(r?'Editar reflexão':'Nova reflexão',`${field('title','Título',r?.title||'','input',true,'autofocus maxlength="250"')}${field('question','Pergunta principal',r?.question||'','textarea',true,'maxlength="10000"')}${field('description','Descrição (opcional)',r?.description||'','textarea',false,'maxlength="20000"')}${field('tags','Etiquetas separadas por vírgula',r?.tags.join(', ')||'')}${r?selectField('status','Situação',[['em andamento','Em andamento'],['pausado','Pausado'],['concluído','Concluído']],r.status):''}`,
@@ -134,7 +136,7 @@ function renderWorkspace(){const r=reflect();if(!r)return;
  $('inspector').classList.toggle('hidden',!selectedId||view!=='map');
  if(view==='map'){renderGraph();renderInspector();}else renderHistory();
 }
-function changeView(v){view=v;if(v==='history'&&isMobile())$('sidebar').classList.add('mobile-hidden');renderWorkspace();}
+function changeView(v){if(v==='history'&&readingMode)closeReader(false);view=v;if(v==='history'&&isMobile())$('sidebar').classList.add('mobile-hidden');renderWorkspace();}
 function getVisible(){const r=reflect();if(!r)return new Set();const sources=new Map(r.nodes.map(n=>[n.id,[]]));const incoming=new Map(r.nodes.map(n=>[n.id,0]));
  for(const e of r.edges){if(e.relation==='retorna')continue;sources.get(e.source)?.push(e.target);incoming.set(e.target,(incoming.get(e.target)||0)+1);}
  const rootIds=r.nodes.filter(n=>(incoming.get(n.id)||0)===0).map(n=>n.id);
@@ -150,7 +152,7 @@ function renderGraph(){const r=reflect();if(!r)return;visible=getVisible();$('gr
  return `<div class="thought-node ${selectedId===n.id?'selected':''} ${journeyNodes.size?(journeyNodes.has(n.id)?'journey-lit':'journey-muted'):''} ${n.state==='abandonado'?'inactive':''}" data-node="${safeText(n.id)}" style="left:${n.x}px;top:${n.y}px;--node-color:${t[2]}"><div class="node-inner"><div class="node-label"><span>${safeText(t[1])} ${safeText(t[0])}</span>${childCount?`<span class="collapse-indicator" title="Clique duas vezes no indicador para recolher ou expandir">${n.collapsed?'▸':'▾'} ${childCount}</span>`:''}</div><div class="node-title">${safeText(n.title||t[0])}</div><div class="node-content">${safeText(n.content)}</div><div class="node-footer"><span class="voice-chip"><i class="voice-dot" style="--voice-color:${safeText(v?.color||'#90a6c1')}"></i>${safeText(v?.name||'Sem voz')}</span><span>${n.annotations?.length?`◫ ${n.annotations.length} · `:''}${n.fallacies?.length?`⚑ ${n.fallacies.length} · `:''}${safeText(STATES[n.state]||'Ativo')}</span></div></div></div>`;
  }).join('');
  for(const el of $('graphNodes').children)nodeHeights.set(el.dataset.node,el.offsetHeight);
- renderEdges();updateTransform();drawMini();$('selectionHint').textContent=selectedId?'Use ← e → para seguir as conexões.':'Escolha um pensamento para continuar seu raciocínio.';updateNavigator();
+ renderEdges();updateTransform();drawMini();$('selectionHint').textContent=selectedId?'Use ← e → ou abra o modo leitura para seguir as conexões.':'Escolha um pensamento para continuar seu raciocínio.';updateNavigator();
 }
 function edgeGeometry(a,b){let x1=a.x+280,y1=a.y+nodeMetrics(a.id).h/2,x2=b.x,y2=b.y+nodeMetrics(b.id).h/2;
  if(x2>=x1-15){const d=Math.max(65,Math.abs(x2-x1)*.48);return {d:`M${x1} ${y1} C${x1+d} ${y1} ${x2-d} ${y2} ${x2} ${y2}`,mx:(x1+x2)/2,my:(y1+y2)/2-9};}
@@ -180,7 +182,7 @@ function selectNode(id){changeTrackedFocus(id);selectedId=id;for(const el of $('
 function renderInspector(){const r=reflect(),n=node(selectedId);if(!r||!n)return;
  const t=TYPES[n.type]||TYPES.comentario,v=voice(n.voiceId),incomings=r.edges.filter(e=>e.target===n.id),outgoings=r.edges.filter(e=>e.source===n.id),notes=n.annotations||[];
  $('inspectorContent').innerHTML=`<div class="inspector-body"><div class="info-line" style="color:${t[2]}">${safeText(t[1])} ${safeText(t[0])} <button class="inline-help" data-inspector="dictionary">? significado</button></div><h2>${safeText(n.title||t[0])}</h2><div class="content-paragraph">${safeText(n.content)}</div>${n.notes?`<p class="small-note"><b>Contexto:</b> ${safeText(n.notes)}</p>`:''}<div class="inline-metas"><span class="tag">${safeText(v?.name||'Sem voz')}</span><span class="tag">${safeText(CLASSES[n.classification]||'Não classificado')}</span><span class="tag">${safeText(STATES[n.state]||'Ativo')}</span></div>
- <div class="inspector-footer"><button class="secondary small" data-inspector="edit">✎ Editar bloco</button><button class="secondary small" data-inspector="connect">⤳ Conectar</button><button class="secondary small" data-inspector="collapse">${n.collapsed?'▸ Expandir':'▾ Recolher'}</button></div>
+ <div class="inspector-footer"><button type="button" class="primary small" data-inspector="read">▣ Ler ampliado</button><button class="secondary small" data-inspector="edit">✎ Editar bloco</button><button class="secondary small" data-inspector="connect">⤳ Conectar</button><button class="secondary small" data-inspector="collapse">${n.collapsed?'▸ Expandir':'▾ Recolher'}</button></div>
  ${n.type==='pausa'?`<div class="resume-hint"><b>Ponto de retomada</b><p>Este bloco registra onde a conversa parou.</p><button class="secondary small" data-inspector="resumeFrom">↗ Retomar com resumo</button></div>`:''}
  <p class="small-note">Criado: ${safeText(niceDate(n.createdAt))} · Editado: ${safeText(niceDate(n.updatedAt))}</p>
  <div class="section-title">POSSÍVEIS FALÁCIAS (${(n.fallacies||[]).length})</div>
@@ -206,7 +208,66 @@ function updateNavigator(){const r=reflect();if(!r)return;const a=$('navigateBac
  if(!a||!b)return;const previous=selectedId?neighbours(r,selectedId,'back'):[],next=selectedId?neighbours(r,selectedId,'next'):[];
  a.disabled=!previous.length;b.disabled=!next.length;label.textContent=selectedId?`${previous.length} anterior(es) · ${next.length} próximo(s)`:'Selecione um bloco';
 }
-function navigate(direction){const r=reflect();if(!r||view!=='map')return;if(!selectedId){const id=r.nodes.find(n=>n.title==='Pergunta principal')?.id||r.nodes[0]?.id;if(id)focusNode(id);return;}
+function showReader(id=selectedId){
+ const r=reflect();if(!r||!r.nodes.length)return toast('Crie um pensamento para iniciar a leitura.');
+ const initial=id&&node(id)?id:r.nodes.find(n=>n.title==='Pergunta principal')?.id||r.nodes[0].id;
+ closeModal();readingMode=true;readerOptions=[];readerDirection=null;
+ $('readerOverlay').classList.remove('hidden');
+ // O leitor é independente do canvas e nunca recebe eventos de arraste.
+ focusNode(initial);renderReader();$('readerOverlay').focus({preventScroll:true});
+}
+function closeReader(returnToMap=true){
+ if(!readingMode)return;readingMode=false;readerOptions=[];readerDirection=null;
+ $('readerOverlay').classList.add('hidden');$('readerChoices').classList.add('hidden');
+ if(returnToMap&&reflect()){
+  if(selectedId)focusNode(selectedId);
+  $('graphViewport').focus({preventScroll:true});
+ }
+}
+function renderReader(){
+ if(!readingMode)return;
+ const r=reflect(),n=node(selectedId);if(!r||!n){closeReader(false);return;}
+ const t=TYPES[n.type]||TYPES.comentario,v=voice(n.voiceId);
+ const prev=neighbours(r,n.id,'back'),next=neighbours(r,n.id,'next');
+ $('readerDebateTitle').textContent=r.title;
+ $('readerCard').style.setProperty('--reader-color',t[2]);
+ $('readerCard').innerHTML=`<div class="reader-meta"><span class="reader-type">${safeText(t[1])} ${safeText(t[0])}</span><span class="reader-voice">● ${safeText(v?.name||'Sem voz')}</span></div>
+  <h2>${safeText(n.title||t[0])}</h2>
+  <div class="reader-text">${safeText(n.content||'Este bloco não possui conteúdo.')}</div>
+  ${n.notes?`<div class="reader-note"><b>Contexto</b><p>${safeText(n.notes)}</p></div>`:''}
+  ${(n.annotations||[]).length?`<div class="reader-note"><b>Notas laterais</b>${n.annotations.map(a=>`<p>${safeText(a.text)}</p>`).join('')}</div>`:''}
+  <div class="reader-meta-footer"><span>${safeText(CLASSES[n.classification]||'Não classificado')}</span><span>${safeText(niceDate(n.createdAt))}</span>${n.fallacies?.length?`<span>⚑ ${n.fallacies.length} possível(is) falácia(s) anotada(s)</span>`:''}</div>`;
+ $('readerBack').disabled=!prev.length;
+ $('readerNext').disabled=!next.length;
+ $('readerPosition').textContent=`${prev.length} entrada(s) · ${next.length} saída(s)`;
+ const panel=$('readerChoices');
+ if(readerOptions.length){
+  panel.classList.remove('hidden');
+  panel.innerHTML=`<h3>${readerDirection==='next'?'Qual caminho seguir?':'De qual bloco voltar?'}</h3><p>Escolha uma ligação. Nenhuma ramificação será alterada.</p><div class="reader-routes">${readerOptions.map((c,i)=>`<button type="button" class="reader-route" data-reader-route="${i}"><span class="reader-route-number">${i+1}</span><span><b>${safeText(labelOf(c.node))}</b><small>${safeText(RELATIONS[c.edge.relation]||c.edge.relation)} · ${safeText(TYPES[c.node.type]?.[0]||'Pensamento')}</small></span><span>→</span></button>`).join('')}</div>`;
+ }else{panel.classList.add('hidden');panel.innerHTML='';}
+}
+function readFollow(candidate,direction,fromHistory=false){
+ if(direction==='next')navHistory.push({from:selectedId,to:candidate.node.id});
+ else if(fromHistory)navHistory.pop();
+ else navHistory=[];
+ readerOptions=[];readerDirection=null;
+ focusNode(candidate.node.id);renderReader();
+ $('readerCenter').scrollTop=0;
+ $('readerOverlay').focus({preventScroll:true});
+}
+function readerMove(direction){
+ const r=reflect();if(!r||!readingMode)return;
+ const action=readingStep(r,selectedId,direction,navHistory);
+ if(action.kind==='missing'||action.kind==='end'){
+  readerOptions=[];readerDirection=null;renderReader();
+  toast(direction==='back'?'Não existe um bloco anterior.':'Fim deste caminho. Você pode voltar ou retornar ao mapa.');return;
+ }
+ if(action.kind==='single'){readFollow(action.candidate,direction,action.fromHistory);return;}
+ readerOptions=action.candidates;readerDirection=direction;renderReader();
+ $('readerChoices').scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function readerChoose(index){if(!readingMode||!readerOptions[index])return;readFollow(readerOptions[index],readerDirection);}
+function navigate(direction){if(readingMode)return readerMove(direction);const r=reflect();if(!r||view!=='map')return;if(!selectedId){const id=r.nodes.find(n=>n.title==='Pergunta principal')?.id||r.nodes[0]?.id;if(id)focusNode(id);return;}
  const candidates=neighbours(r,selectedId,direction==='back'?'back':'next');if(!candidates.length){toast(direction==='back'?'Sem ligação anterior.':'Este caminho não possui próxima ligação.');return;}
  const remembered=direction==='back'&&navHistory.length&&navHistory.at(-1).to===selectedId?navHistory.at(-1):null;
  if(remembered&&candidates.some(c=>c.node.id===remembered.from)){navHistory.pop();focusNode(remembered.from);return;}
@@ -449,7 +510,7 @@ function wireGraph(){const viewport=$('graphViewport'),nodes=$('graphNodes'),edg
  nodes.addEventListener('pointerdown',e=>{
  const element=e.target.closest('[data-node]');if(!element||e.button>0)return;
  e.stopPropagation();if(e.pointerType==='touch')e.preventDefault();const id=element.dataset.node,n=node(id);if(!n)return;
- selectNode(id);graphDrag={id,pointer:e.pointerId,startX:e.clientX,startY:e.clientY,origX:n.x,origY:n.y,old:clone(reflect()),moved:false};
+ selectNode(id);$('graphViewport').focus({preventScroll:true});graphDrag={id,pointer:e.pointerId,startX:e.clientX,startY:e.clientY,origX:n.x,origY:n.y,old:clone(reflect()),moved:false};
  element.setPointerCapture(e.pointerId);
  });
  nodes.addEventListener('pointermove',e=>{if(!graphDrag||e.pointerId!==graphDrag.pointer)return;const n=node(graphDrag.id),el=nodes.querySelector(`[data-node="${CSS.escape(graphDrag.id)}"]`);if(!n||!el)return;
@@ -457,7 +518,7 @@ function wireGraph(){const viewport=$('graphViewport'),nodes=$('graphNodes'),edg
  graphDrag.moved=true;n.x=Math.round(graphDrag.origX+dx);n.y=Math.round(graphDrag.origY+dy);el.style.left=n.x+'px';el.style.top=n.y+'px';renderEdges();drawMini();});
  const endDrag=e=>{if(!graphDrag||e.pointerId!==graphDrag.pointer)return;if(graphDrag.moved){pushCheckpoint(graphDrag.old);reflect().updatedAt=now();persist();renderWorkspace();}graphDrag=null;};
  nodes.addEventListener('pointerup',endDrag);nodes.addEventListener('pointercancel',endDrag);
- nodes.addEventListener('dblclick',e=>{const el=e.target.closest('[data-node]');if(!el)return;if(e.target.closest('.collapse-indicator'))return toggleCollapse(el.dataset.node);openNodeEditor(el.dataset.node);});
+ nodes.addEventListener('dblclick',e=>{const el=e.target.closest('[data-node]');if(!el)return;e.preventDefault();e.stopPropagation();if(e.target.closest('.collapse-indicator'))return toggleCollapse(el.dataset.node);showReader(el.dataset.node);});
  edges.addEventListener('click',e=>{const id=e.target.dataset.edge;if(id){e.stopPropagation();editEdge(id);}});
  viewport.addEventListener('pointerdown',e=>{if(e.button>0||e.target.closest('.thought-node')||e.target.closest('.edge-hit')||e.target.closest('button, .journey-banner, .path-navigator'))return;
  panDrag={pointer:e.pointerId,startX:e.clientX,startY:e.clientY,origX:pan.x,origY:pan.y};viewport.setPointerCapture(e.pointerId);viewport.classList.add('panning');if(selectedId){selectedId=null;renderGraph();$('inspector').classList.add('hidden');}});
@@ -474,7 +535,14 @@ function wireEvents(){
  $('pauseSession').onclick=pauseReflection;$('resumeSession').onclick=()=>resumeReflection();
  $('reportBtn').onclick=showReport;$('reportSidebar').onclick=showReport;$('historyReport').onclick=showReport;
  $('chessPromptBtn').onclick=copyChessPrompt;$('finishBtn').onclick=finishReflection;$('gapSuggestionsBtn').onclick=showGapSuggestions;
- $('navigateBack').onclick=()=>navigate('back');$('navigateForward').onclick=()=>navigate('next');$('clearJourney').onclick=clearJourneyHighlight;$('jsonFileInput').onchange=e=>receiveImport(e.target.files?.[0]);
+ $('navigateBack').onclick=()=>navigate('back');$('navigateForward').onclick=()=>navigate('next');
+ $('readerOpenToolbar').onclick=()=>showReader();$('readerOpenMap').onclick=()=>showReader();
+ $('readerExit').onclick=()=>closeReader();$('readerEdit').onclick=()=>{const id=selectedId;closeReader();openNodeEditor(id);};
+ $('readerBack').onclick=()=>readerMove('back');$('readerNext').onclick=()=>readerMove('next');
+ $('readerChoices').onclick=e=>{const item=e.target.closest('[data-reader-route]');if(item)readerChoose(Number(item.dataset.readerRoute));};
+ $('readerOverlay').addEventListener('pointerdown',e=>e.stopPropagation());
+ $('readerOverlay').addEventListener('click',e=>e.stopPropagation());
+ $('clearJourney').onclick=clearJourneyHighlight;$('jsonFileInput').onchange=e=>receiveImport(e.target.files?.[0]);
  $('newReflection').onclick=()=>editReflection();$('openDemo').onclick=()=>{const demo=app.reflections.find(r=>r.tags.includes('demonstração'));if(demo)return openReflection(demo.id);
  const r=makeDemo();app.reflections.unshift(r);persist();openReflection(r.id);};
  $('searchReflection').oninput=renderLibrary;$('libraryFilter').onchange=renderLibrary;
@@ -496,18 +564,29 @@ function wireEvents(){
  $('connectToolbar').onclick=()=>connectModal();$('emphasisToggle').onchange=e=>{showMainline=e.target.checked;renderEdges();};
  $('undoBtn').onclick=undoAction;$('redoBtn').onclick=redoAction;
  $('inspectorContent').onclick=e=>{const noteId=e.target.closest('[data-remove-note]')?.dataset.removeNote;if(noteId)return removeMarginNote(noteId);const fallacyId=e.target.closest('[data-edit-fallacy]')?.dataset.editFallacy;if(fallacyId)return markFallacy(fallacyId);const q=e.target.closest('[data-quick]')?.dataset.quick;if(q)return quick(q);
- const action=e.target.closest('[data-inspector]')?.dataset.inspector;if(action==='edit')openNodeEditor(selectedId);if(action==='connect')connectModal();
+ const action=e.target.closest('[data-inspector]')?.dataset.inspector;if(action==='read')showReader(selectedId);if(action==='edit')openNodeEditor(selectedId);if(action==='connect')connectModal();
  if(action==='challenge')challenge();if(action==='collapse')toggleCollapse(selectedId);if(action==='delete')removeNode();
  if(action==='addNote')addMarginNote();if(action==='addFallacy')markFallacy();if(action==='dictionary')glossaryModal();if(action==='resumeFrom')resumeReflection(selectedId);};
  $('closeInspector').onclick=()=>{selectedId=null;renderWorkspace();};
  $('historyList').onclick=e=>{const jump=e.target.closest('[data-jump]')?.dataset.jump;if(jump)focusNode(jump);};
  $('closeModal').onclick=closeModal;$('modal').onclick=e=>{if(e.target===$('modal')||e.target.closest('[data-close-modal]'))closeModal();};
  document.addEventListener('keydown',e=>{
+ if(readingMode){
+  if(e.key==='Escape'){e.preventDefault();closeReader();return;}
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();readerMove(e.key==='ArrowLeft'?'back':'next');return;}
+  if(readerOptions.length&&/^[1-9]$/.test(e.key)){e.preventDefault();readerChoose(Number(e.key)-1);return;}
+  // Não executar comandos de edição nem apagar blocos no modo de leitura.
+  return;
+ }
  if(e.key==='Escape'){if(!$('modal').classList.contains('hidden'))closeModal();else if(selectedId){selectedId=null;renderWorkspace();}else if(isMobile())$('sidebar').classList.add('mobile-hidden');return;}
- if(!$('modal').classList.contains('hidden')||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||!activeId)return;
+ // Verifica o alvo real do evento: um input escondido da biblioteca não deve bloquear as setas no desktop.
+ const target=e.target;
+ const typing=target?.closest?.('input,textarea,select,[contenteditable="true"],[role="textbox"]');
+ if(!$('modal').classList.contains('hidden')||typing||!activeId)return;
  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'){e.preventDefault();undoAction();}
  else if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){e.preventDefault();redoAction();}
  else if(!e.ctrlKey&&!e.altKey&&!e.metaKey&&['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();navigate(e.key==='ArrowLeft'?'back':'next');}
+ else if(!e.ctrlKey&&!e.altKey&&!e.metaKey&&e.key==='Enter'&&selectedId&&e.target===$('graphViewport')){e.preventDefault();showReader(selectedId);}
  else if(!e.ctrlKey&&!e.altKey&&!e.metaKey&&e.key.toLowerCase()==='n'){e.preventDefault();openNodeEditor(null,selectedId?{parentId:selectedId}:{});}
  else if(['Delete','Backspace'].includes(e.key)&&selectedId){e.preventDefault();removeNode();}
  });

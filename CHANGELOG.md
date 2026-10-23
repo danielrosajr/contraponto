@@ -1,5 +1,16 @@
 # Histórico de versões
 
+## v0.3.1 — Leitura Guiada (2026-10-22)
+
+- `feat`: Modo Leitura quase em tela cheia, com pensamento integral, notas, metadados e controles de navegação independentes do arraste.
+- `feat`: abrir leitor por duplo clique no bloco, barra de ferramentas, navegação flutuante ou inspetor.
+- `feat`: avanço/retorno por setas ← e →, escolha explícita de ramificações (inclusive teclas 1–9) e fechamento com Esc.
+- `fix`: foco de teclado no mapa do PC ao selecionar pensamento; inputs ocultos da biblioteca não impedem os atalhos.
+- `fix`: botão de anterior/próximo separado do sistema de arraste e validação por cliques reais em Chromium.
+- `compat`: mantém schemaVersion 3 e backups anteriores; cache offline atualizado para `contraponto-0.3.1`.
+- `test`: 35 testes automatizados aprovados, mais smoke tests de UI desktop/celular usando armazenamento simulado.
+
+
 ## v0.3.0 — Fio do Raciocínio (2026-10-22)
 
 - `feat`: navegação por conexões com setas ←/→ e botões de toque; escolha explícita nas bifurcações.
