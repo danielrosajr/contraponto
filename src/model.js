@@ -1,5 +1,7 @@
+import {normalizeLiveDebates} from './live.js';
 import {validFallacies} from './fallacies.js';
 export const TYPES = {
+  aovivo: ['Debate ao Vivo','🎙','#56d6cb'],
   pergunta: ['Pergunta','?','#70b9ff'], premissa: ['Premissa','◈','#bca8ff'], argumento: ['Argumento','↗','#80cba8'],
   objecao: ['Objeção','!','#fa9b8c'], contra: ['Contra-argumento','↩','#8dc9d2'], exemplo: ['Exemplo','▦','#e6bb7f'],
   cenario: ['Cenário','◇','#ce9de6'], emocao: ['Emoção','♡','#f0a9c0'], valor: ['Valor pessoal','✧','#f1d07f'],
@@ -38,7 +40,7 @@ export const defaultVoices = () => [
 export function newReflection(title,question,description='',tags=[]) {
   const ts=now(); const id=uid('reflection');
   return {id,title:title.trim(),question:question.trim(),description:description.trim(),status:'em andamento',archived:false,tags,
-    createdAt:ts,updatedAt:ts,completedAt:null,closure:null,closures:[],sessions:[],voices:defaultVoices(),nodes:[{id:uid('node'),type:'pergunta',title:'Pergunta principal',content:question.trim(),notes:'',classification:'',state:'ativo',voiceId:'eu1',x:0,y:0,collapsed:false,createdAt:ts,updatedAt:ts}],edges:[]};
+    createdAt:ts,updatedAt:ts,completedAt:null,closure:null,closures:[],sessions:[],liveDebates:[],voices:defaultVoices(),nodes:[{id:uid('node'),type:'pergunta',title:'Pergunta principal',content:question.trim(),notes:'',classification:'',state:'ativo',voiceId:'eu1',x:0,y:0,collapsed:false,createdAt:ts,updatedAt:ts}],edges:[]};
 }
 export function makeDemo() {
   const r = newReflection('O que significa ser afetado pelo desconhecido?', 'O que significa dizer que algo não me afeta se eu desconheço sua existência?',
@@ -68,7 +70,7 @@ export function makeDemo() {
   r.nodes[11].annotations=[{id:uid('note'),text:'Esta observação não precisa virar outro argumento. É apenas uma nota anexada ao bloco.',createdAt:ts}];
   return r;
 }
-export function initialData() { return {schemaVersion:4,settings:{theme:'dark',lastSeenVersion:null,tutorialCompleted:false},reflections:[makeDemo()]}; }
+export function initialData() { return {schemaVersion:5,settings:{theme:'dark',lastSeenVersion:null,tutorialCompleted:false},reflections:[makeDemo()]}; }
 export function safeText(s) {return String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');}
 export function niceDate(iso) { return iso ? new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(iso)) : '—'; }
 export function cleanFilename(s){return String(s||'reflexao').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-|-$/g,'').toLowerCase().slice(0,65) || 'reflexao';}
@@ -87,6 +89,7 @@ export function normalizeImported(obj) {
         notes:String(n.notes||'').slice(0,30000),classification: n.classification in CLASSES ? n.classification:'',state:n.state in STATES ?n.state:'ativo',
         voiceId:String(n.voiceId||'eu1'),x:Number.isFinite(n.x)?Math.max(-100000,Math.min(100000,n.x)):0,
         y:Number.isFinite(n.y)?Math.max(-100000,Math.min(100000,n.y)):0,
+        liveSessionId:typeof n.liveSessionId==='string'?n.liveSessionId:null,origin:n.origin?.kind==='live'?{kind:'live',sessionId:String(n.origin.sessionId||'').slice(0,130),segmentId:String(n.origin.segmentId||'').slice(0,130)}:null,
         discussion:Array.isArray(n.discussion)?n.discussion.slice(0,30).map(d=>({id:String(d?.id||uid('mark')).slice(0,130),key:['conversar','pendente','incomoda','mudanca','sentimento'].includes(d?.key)?d.key:'conversar',label:String(d?.label||'').slice(0,150),note:String(d?.note||'').slice(0,1500),createdAt:String(d?.createdAt||now())})):[],
         annotations:Array.isArray(n.annotations)?n.annotations.slice(0,100).map(a=>({id:String(a?.id||uid('note')).slice(0,130),text:String(a?.text||'').slice(0,6000),createdAt:a?.createdAt||now()})).filter(a=>a.text.trim()):[],
         fallacies:validFallacies(n.fallacies),suggestedGap:n.suggestedGap&&typeof n.suggestedGap==='object'?{from:String(n.suggestedGap.from||''),to:String(n.suggestedGap.to||''),durationMs:Number(n.suggestedGap.durationMs)||0}:null,collapsed:!!n.collapsed,createdAt:n.createdAt||now(),updatedAt:n.updatedAt||now()});
@@ -99,7 +102,7 @@ export function normalizeImported(obj) {
       question:String(r.question||'').slice(0,10000),description:String(r.description||'').slice(0,20000),
       status:['em andamento','pausado','concluído'].includes(r.status)?r.status:'em andamento',archived:!!r.archived,
       tags:Array.isArray(r.tags)?r.tags.slice(0,20).map(t=>String(t).slice(0,50)):[],createdAt:r.createdAt||now(),updatedAt:r.updatedAt||now(),
-      completedAt:typeof r.completedAt==='string'?r.completedAt:null,closure:r.closure&&typeof r.closure==='object'&&['pausa','semresposta','provisoria','final'].includes(r.closure.kind)?{kind:r.closure.kind,note:String(r.closure.note||'').slice(0,5000),at:String(r.closure.at||now())}:null,closures:Array.isArray(r.closures)?r.closures.slice(-100).filter(c=>c&&['pausa','semresposta','provisoria','final'].includes(c.kind)).map(c=>({kind:c.kind,note:String(c.note||'').slice(0,5000),at:String(c.at||now())})):[],sessions:Array.isArray(r.sessions)?r.sessions.slice(-1000).map(s=>({id:String(s.id||uid('session')),startedAt:String(s.startedAt||now()),endedAt:String(s.endedAt||s.startedAt||now()),activeMs:Math.max(0,Math.min(31536000000,Number(s.activeMs)||0)),focusMs:Object.fromEntries(Object.entries(s.focusMs||{}).slice(0,3000).filter(([k,v])=>typeof k==='string'&&Number.isFinite(Number(v))).map(([k,v])=>[k,Math.max(0,Math.min(31536000000,Number(v)))]))})):[],voices:voices.length?voices:defaultVoices(),nodes,edges});
+      completedAt:typeof r.completedAt==='string'?r.completedAt:null,closure:r.closure&&typeof r.closure==='object'&&['pausa','semresposta','provisoria','final'].includes(r.closure.kind)?{kind:r.closure.kind,note:String(r.closure.note||'').slice(0,5000),at:String(r.closure.at||now())}:null,closures:Array.isArray(r.closures)?r.closures.slice(-100).filter(c=>c&&['pausa','semresposta','provisoria','final'].includes(c.kind)).map(c=>({kind:c.kind,note:String(c.note||'').slice(0,5000),at:String(c.at||now())})):[],liveDebates:normalizeLiveDebates(r.liveDebates),sessions:Array.isArray(r.sessions)?r.sessions.slice(-1000).map(s=>({id:String(s.id||uid('session')),startedAt:String(s.startedAt||now()),endedAt:String(s.endedAt||s.startedAt||now()),activeMs:Math.max(0,Math.min(31536000000,Number(s.activeMs)||0)),focusMs:Object.fromEntries(Object.entries(s.focusMs||{}).slice(0,3000).filter(([k,v])=>typeof k==='string'&&Number.isFinite(Number(v))).map(([k,v])=>[k,Math.max(0,Math.min(31536000000,Number(v)))]))})):[],voices:voices.length?voices:defaultVoices(),nodes,edges});
   }
   return reflections;
 }

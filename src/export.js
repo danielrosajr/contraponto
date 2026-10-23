@@ -14,10 +14,12 @@ export function markdownFor(r){
    ...(n.suggestedGap?[`- Pausa sugerida, confirmada manualmente: possível intervalo entre ${n.suggestedGap.from} e ${n.suggestedGap.to} (${Math.round(n.suggestedGap.durationMs/60000)} minutos); não é uma pausa observada.`]:[]),
    ...(n.discussion||[]).map(d=>`- Marcado para conversar: ${d.label||d.key}${d.note?' — '+d.note:''}`),
    ...(n.fallacies||[]).map(f=>`- Falácia marcada pelo autor (a verificar): ${FALLACIES[f.key]?.[0]||f.key}; estado: ${FALLACY_STATUSES[f.status]||f.status}; ${f.note||'sem justificativa'}`),
+   ...(n.origin?.kind==='live'?[`- Origem: 🎙 Debate ao Vivo · sessão ${n.origin.sessionId} · turno ${n.origin.segmentId}`]:[]),...(n.liveSessionId?[`- Marcador de sessão ao vivo: ${n.liveSessionId}`]:[]),
    `- Conteúdo: ${n.content}`,n.notes?`- Observações: ${n.notes}`:'',
    ...(Array.isArray(n.annotations)?n.annotations.map(a=>`- Nota lateral (${niceDate(a.createdAt)}): ${a.text}`):[]),
    `- Ligações de saída: ${connections.length?connections.map(e=>`${RELATIONS[e.relation]||e.relation} → ${r.nodes.find(x=>x.id===e.target)?.title||r.nodes.find(x=>x.id===e.target)?.content.slice(0,55)||e.target} (${e.target})`).join(' | '):'Nenhuma'}`);
  }
+ lines.push('','## Capturas de debate ao vivo (texto registrado)',...(r.liveDebates||[]).flatMap(l=>[`### ${l.title} · ${niceDate(l.startedAt)}`,`Estado: ${l.status} · encerramento: ${l.finishReason||'não registrado'}`,...(l.segments||[]).map(s=>`- [${niceDate(s.startedAt)}] ${voice(s.voiceId)}: ${s.text||'(sem texto transcrito)'} (turno ${Math.round((s.turnMs||0)/1000)}s)`)]));
  lines.push('','## Métricas e sessões registradas',reportMarkdown(r),'','## Conexões detalhadas');for(const e of r.edges){const a=r.nodes.find(n=>n.id===e.source),b=r.nodes.find(n=>n.id===e.target);lines.push(`- **${a?.title||a?.content.slice(0,40)||e.source}** —${RELATIONS[e.relation]||e.relation}→ **${b?.title||b?.content.slice(0,40)||e.target}**`);}return lines.filter(x=>x!==undefined).join('\n');
 }
 export {analysisPrompt as promptFor} from './analysis.js';

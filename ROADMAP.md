@@ -1,16 +1,16 @@
-# ROADMAP — CONTRAPONTO
+# CONTRAPONTO — Roadmap
 
-## Entregue na v0.4.0
-- Apresentação HTML independente para leitura no celular, ramificações e mapa.
-- Resumo para conversar e trechos marcados no editor.
-- Novo prompt crítico e importação manual de sugestões em JSON.
-- Encerramentos com motivo, tutorial guiado e changelog dentro do aplicativo.
+## v0.5.0 — Debate ao Vivo — implementado
+- Troca rápida de vozes, sessões e transcrições locais, tempo por perspectiva e conversão em blocos.
+- Áudio opcional em IndexedDB, escolha consciente da transcrição de navegador e avisos de privacidade.
+- Falácias anotadas, ligação ao mapa e ajuda contextual.
 
-## Possíveis próximas versões (não implementado)
-- Link privado com senha, expiração e revogação: depende de backend criptografado, autenticação ou criptografia ponta a ponta cuidadosamente projetada. Atualmente só há arquivo local.
-- Comentários e observações de quem recebe a apresentação, com exportação opcional de volta para o criador (atualmente somente leitura).
-- Exportação PDF direta do editor; atualmente, abrir o HTML e usar Imprimir/PDF.
-- Modo de apresentação com trilha narrativa personalizada / capítulos e notas do autor para cada ramificação.
-- Análises locais avançadas e importação de respostas completas de IA com verificação de IDs, sem intervenção automática no mapa.
-- **Xadrez de argumentos**: metáfora visual guiada entre duas perspectivas, jogadas simbólicas, críticas e revisões; motor de xadrez verdadeiro seria componente separado e não deve alegar detectar falácias a partir da posição no tabuleiro.
-- Sincronização opcional entre dispositivos com privacidade explícita; esta versão não sincroniza.
+## Próximos passos (a validar com uso real)
+- Transcrição **realmente local e offline**, com pacote de modelo e consentimento claro, para não depender dos serviços dos navegadores.
+- Segmentação semântica de falas longas e revisão assistida de conexões por IA opt-in.
+- Detecção de silêncio calibrável e distinção entre som ambiente e fala humana.
+- Melhorar sincronização exata entre áudio e texto e formatos de exportação áudio+metadados.
+- Polimento de permissão de microfone/background no Safari iOS e no Chrome Android com testes físicos.
+- Modo leitura da apresentação com ícone de debate ao vivo e trechos de origem visíveis; sem compartilhar áudio automaticamente.
+- Exportação encriptada opcional de conteúdo sensível, com senha fornecida pelo usuário.
+- Xadrez de argumentos como metáfora e animação guiada; sem confundir avaliação retórica com validade lógica nem inventar partidas legais.

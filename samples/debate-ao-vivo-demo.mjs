@@ -1,0 +1,11 @@
+import {makeDemo,newReflection} from '../src/model.js';
+import {newLiveDebate,addTurn,previewLiveConversion,convertLiveToMap} from '../src/live.js';
+import {writeFileSync} from 'node:fs';
+const r=makeDemo();r.title='Exemplo — pensamentos manuais e debate ao vivo';const origin=r.nodes.find(n=>n.type==='pergunta');
+const s=newLiveDebate(origin.id,r.voices,'Debate de demonstração sobre o desconhecido','2026-10-22T18:03:00.000Z');
+s.status='finished';s.endedAt='2026-10-22T18:05:30.000Z';s.finishReason='provisoria';s.finishNote='Continuar investigando diferenças entre sentimentos e consequências.';
+const a=addTurn(s,'eu1','2026-10-22T18:03:00.000Z');a.text='Eu penso que quando não sei que algo aconteceu, talvez não sofra conscientemente por aquilo naquele momento.';a.turnMs=40000;
+const b=addTurn(s,'eu2','2026-10-22T18:03:40.000Z');b.text='Mas o fato de não saber muda as consequências reais? E o direito de decidir sobre informações importantes?';b.turnMs=55000;
+const c=addTurn(s,'observador','2026-10-22T18:04:35.000Z');c.text='Parece que estamos distinguindo experiência emocional, consequências e consentimento. Preciso continuar depois.';c.turnMs=55000;
+r.liveDebates.push(s);convertLiveToMap(r,s,previewLiveConversion(r,s),'2026-10-22T18:05:30.000Z');
+writeFileSync(new URL('./reflexao-com-debate-ao-vivo.json',import.meta.url),JSON.stringify({schemaVersion:5,reflections:[r]},null,2));

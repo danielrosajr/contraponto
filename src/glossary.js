@@ -1,6 +1,7 @@
 // Glossário local: definições curtas, exemplos e ressalvas. Nenhum serviço externo.
 export const GLOSSARY = {
   types: {
+    aovivo: ['Debate ao Vivo','Marcador que indica uma sessão capturada por voz ou texto. Seus blocos seguintes podem ser transcrições convertidas e revistas.','Uma conversa ao vivo continua a linha anterior.'],
     pergunta: ['Pergunta','Algo que você quer entender ou responder.','O que eu sentiria se isso acontecesse?'],
     premissa: ['Premissa','Ideia adotada como ponto de partida de um raciocínio; pode precisar ser verificada.','Talvez conhecer uma situação mude minha reação.'],
     argumento: ['Argumento','Razão oferecida para sustentar uma afirmação.','Porque uma informação pode mudar minhas decisões.'],

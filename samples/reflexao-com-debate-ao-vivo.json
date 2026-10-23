@@ -1,0 +1,574 @@
+{
+  "schemaVersion": 5,
+  "reflections": [
+    {
+      "id": "reflection_f5d62fd4-3505-4a5f-b0ae-0464ba0ec479",
+      "title": "Exemplo — pensamentos manuais e debate ao vivo",
+      "question": "O que significa dizer que algo não me afeta se eu desconheço sua existência?",
+      "description": "Reflexão fictícia demonstrativa. Explore caminhos, objeções, cenários e um retorno à pergunta original.",
+      "status": "em andamento",
+      "archived": false,
+      "tags": [
+        "demonstração",
+        "filosofia"
+      ],
+      "createdAt": "2026-10-23T05:21:31.432Z",
+      "updatedAt": "2026-10-23T05:21:31.432Z",
+      "completedAt": null,
+      "closure": null,
+      "closures": [],
+      "sessions": [],
+      "liveDebates": [
+        {
+          "id": "live_75751d80-ac22-46e1-817d-b0b6a4a993f3",
+          "anchorNodeId": "node_c6c402ae-cd49-4f75-bcf1-007aca317df2",
+          "title": "Debate de demonstração sobre o desconhecido",
+          "startedAt": "2026-10-22T18:03:00.000Z",
+          "endedAt": "2026-10-22T18:05:30.000Z",
+          "status": "finished",
+          "finishReason": "provisoria",
+          "finishNote": "Continuar investigando diferenças entre sentimentos e consequências.",
+          "audioRequested": false,
+          "audioAvailable": false,
+          "audioMime": "",
+          "transcriptionRequested": false,
+          "segments": [
+            {
+              "id": "turn_aa60ef64-c9b9-4d1a-855e-21cf2a1b0c66",
+              "voiceId": "eu1",
+              "startedAt": "2026-10-22T18:03:00.000Z",
+              "endedAt": null,
+              "turnMs": 40000,
+              "speechMs": 0,
+              "text": "Eu penso que quando não sei que algo aconteceu, talvez não sofra conscientemente por aquilo naquele momento.",
+              "fallacies": [],
+              "mappedNodeId": "node_35fcac43-e04c-4e1e-b61f-ce06003a652a"
+            },
+            {
+              "id": "turn_61658403-b244-459c-9a0f-f9508af2d488",
+              "voiceId": "eu2",
+              "startedAt": "2026-10-22T18:03:40.000Z",
+              "endedAt": null,
+              "turnMs": 55000,
+              "speechMs": 0,
+              "text": "Mas o fato de não saber muda as consequências reais? E o direito de decidir sobre informações importantes?",
+              "fallacies": [],
+              "mappedNodeId": "node_3907a5e4-6b7b-43dc-a20f-4dfff00d451f"
+            },
+            {
+              "id": "turn_ddd33b16-bf4c-4d6f-bf18-a3563cba7ffb",
+              "voiceId": "observador",
+              "startedAt": "2026-10-22T18:04:35.000Z",
+              "endedAt": null,
+              "turnMs": 55000,
+              "speechMs": 0,
+              "text": "Parece que estamos distinguindo experiência emocional, consequências e consentimento. Preciso continuar depois.",
+              "fallacies": [],
+              "mappedNodeId": "node_30a07759-3024-4317-bf11-cebd2d769d7c"
+            }
+          ],
+          "voicesAtStart": [
+            "eu1",
+            "eu2",
+            "observador"
+          ],
+          "createdNodeIds": [
+            "node_35fcac43-e04c-4e1e-b61f-ce06003a652a",
+            "node_3907a5e4-6b7b-43dc-a20f-4dfff00d451f",
+            "node_30a07759-3024-4317-bf11-cebd2d769d7c"
+          ]
+        }
+      ],
+      "voices": [
+        {
+          "id": "eu1",
+          "name": "Eu inicial",
+          "color": "#6db5ff"
+        },
+        {
+          "id": "eu2",
+          "name": "Eu crítico",
+          "color": "#f3a382"
+        },
+        {
+          "id": "observador",
+          "name": "Observador",
+          "color": "#bca4fb"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "node_c6c402ae-cd49-4f75-bcf1-007aca317df2",
+          "type": "pergunta",
+          "title": "Pergunta principal",
+          "content": "O que significa dizer que algo não me afeta se eu desconheço sua existência?",
+          "notes": "",
+          "classification": "",
+          "state": "ativo",
+          "voiceId": "eu1",
+          "x": 0,
+          "y": 0,
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.432Z",
+          "updatedAt": "2026-10-23T05:21:31.432Z"
+        },
+        {
+          "id": "node_096d0e5a-6a0f-4635-8ccb-e90aa0bfef7c",
+          "type": "premissa",
+          "title": "Sofrimento consciente",
+          "content": "Se desconheço um acontecimento, não posso sofrer conscientemente por ele naquele instante.",
+          "voiceId": "eu1",
+          "x": 360,
+          "y": -160,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "node_0d602bd5-fd0a-42a7-bc30-1e043b8c9d9b",
+          "type": "objecao",
+          "title": "E as consequências?",
+          "content": "Não perceber algo elimina as consequências que isso pode produzir na minha vida?",
+          "voiceId": "eu2",
+          "x": 720,
+          "y": -210,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z",
+          "discussion": [
+            {
+              "id": "mark_d6136e00-52df-4ccb-9980-518eb88dada7",
+              "key": "conversar",
+              "label": "Quero conversar sobre isso",
+              "note": "Como diferenciar sofrimento emocional e consequências?",
+              "createdAt": "2026-10-23T05:21:31.434Z"
+            }
+          ]
+        },
+        {
+          "id": "node_5e21d4d7-0f1a-4a10-889d-3631fa3efef0",
+          "type": "contra",
+          "title": "Duas dimensões",
+          "content": "Ausência de sofrimento imediato não significa ausência de efeitos concretos.",
+          "voiceId": "eu1",
+          "x": 1080,
+          "y": -230,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "node_2cdc42df-d6d6-4c79-b161-cbdcf210ad52",
+          "type": "cenario",
+          "title": "Cenário A",
+          "content": "Uma pessoa esconde um fato sem alterar em nada minhas decisões ou meu cotidiano.",
+          "voiceId": "eu1",
+          "x": 720,
+          "y": 65,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "node_6f16b357-ce16-4523-bed0-7e377fcafa8f",
+          "type": "cenario",
+          "title": "Cenário B",
+          "content": "Uma informação omitida me impede de fazer escolhas importantes.",
+          "voiceId": "eu2",
+          "x": 1080,
+          "y": 85,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "node_5b7df702-520e-4809-a19f-9f1f40d08dfe",
+          "type": "pergunta",
+          "title": "O que é ser afetado?",
+          "content": "Estou falando de sentir algo, de perder autonomia ou de sofrer consequências?",
+          "voiceId": "observador",
+          "x": 1440,
+          "y": -115,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "node_cb574cd6-8c97-496f-b5af-8a6fdb5935ce",
+          "type": "valor",
+          "title": "Autonomia",
+          "content": "Valorizar a possibilidade de escolher com base em informações relevantes.",
+          "voiceId": "eu1",
+          "x": 1440,
+          "y": 180,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "node_4f0ce840-5b7d-408a-af8d-9f6c9fd9c2bf",
+          "type": "retorno",
+          "title": "Voltar ao centro",
+          "content": "Agora volto à pergunta original, distinguindo o que sinto do que realmente acontece.",
+          "voiceId": "observador",
+          "x": 1800,
+          "y": -35,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "node_0e6b8782-2524-44c7-a413-958717d1035f",
+          "type": "provisoria",
+          "title": "Conclusão provisória",
+          "content": "Não saber pode impedir sofrimento consciente imediato, mas não garante ausência de consequências, nem preserva necessariamente minha autonomia.",
+          "voiceId": "eu1",
+          "x": 2160,
+          "y": -45,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "node_f370e96c-bd6e-4fcf-90f2-801716165945",
+          "type": "roteiro",
+          "title": "Organizando o exercício",
+          "content": "Quero comparar o que sinto, o que acontece e o que considero justo em cada cenário.",
+          "voiceId": "observador",
+          "x": 325,
+          "y": 420,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "node_1394ef76-33ae-41f2-b4fc-0f623b084f69",
+          "type": "comentario",
+          "title": "Pensamento solto",
+          "content": "Ainda não sei se este exemplo realmente ajuda. Vou deixá-lo registrado.",
+          "voiceId": "eu1",
+          "x": 700,
+          "y": 440,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z",
+          "annotations": [
+            {
+              "id": "note_827c33a2-6b92-46eb-a5ea-b273ef6cec3c",
+              "text": "Esta observação não precisa virar outro argumento. É apenas uma nota anexada ao bloco.",
+              "createdAt": "2026-10-23T05:21:31.434Z"
+            }
+          ]
+        },
+        {
+          "id": "node_24bd8fd8-5f12-4d64-bb6e-7bb28dad02b4",
+          "type": "acordo",
+          "title": "Aceito por enquanto",
+          "content": "Aceito temporariamente essa distinção, mas quero testá-la em outra situação.",
+          "voiceId": "eu2",
+          "x": 1090,
+          "y": 460,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "node_d027bc2e-36ad-4683-894b-d1b8146b21be",
+          "type": "meta",
+          "title": "Sobre o debate",
+          "content": "Não preciso transformar toda fala do meu diálogo interno em argumento.",
+          "voiceId": "observador",
+          "x": 1480,
+          "y": 480,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "node_d4dd7710-d360-4c55-a661-49c683eaa5ea",
+          "type": "pausa",
+          "title": "Retomar depois",
+          "content": "Na próxima sessão: investigar melhor a diferença entre dano e julgamento moral.",
+          "voiceId": "observador",
+          "x": 1860,
+          "y": 450,
+          "notes": "",
+          "classification": "hipotese",
+          "state": "ativo",
+          "collapsed": false,
+          "createdAt": "2026-10-23T05:21:31.434Z",
+          "updatedAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "node_5f1d8898-50ac-4ffb-8882-a2b760cd5053",
+          "type": "aovivo",
+          "title": "🎙 Debate ao Vivo",
+          "content": "Debate de demonstração sobre o desconhecido",
+          "notes": "Marcador de origem: os próximos blocos surgiram em uma sessão ao vivo.",
+          "classification": "",
+          "state": "ativo",
+          "voiceId": "eu1",
+          "x": 360,
+          "y": 0,
+          "collapsed": false,
+          "createdAt": "2026-10-22T18:05:30.000Z",
+          "updatedAt": "2026-10-22T18:05:30.000Z",
+          "liveSessionId": "live_75751d80-ac22-46e1-817d-b0b6a4a993f3",
+          "annotations": [],
+          "discussion": [],
+          "fallacies": []
+        },
+        {
+          "id": "node_35fcac43-e04c-4e1e-b61f-ce06003a652a",
+          "type": "premissa",
+          "title": "",
+          "content": "Eu penso que quando não sei que algo aconteceu, talvez não sofra conscientemente por aquilo naquele momento.",
+          "notes": "Capturado no Debate ao Vivo. Transcrição automática pode conter erros.",
+          "voiceId": "eu1",
+          "classification": "hipotese",
+          "state": "ativo",
+          "x": 715,
+          "y": -40,
+          "collapsed": false,
+          "createdAt": "2026-10-22T18:03:00.000Z",
+          "updatedAt": "2026-10-22T18:05:30.000Z",
+          "origin": {
+            "kind": "live",
+            "sessionId": "live_75751d80-ac22-46e1-817d-b0b6a4a993f3",
+            "segmentId": "turn_aa60ef64-c9b9-4d1a-855e-21cf2a1b0c66"
+          },
+          "annotations": [],
+          "discussion": [],
+          "fallacies": []
+        },
+        {
+          "id": "node_3907a5e4-6b7b-43dc-a20f-4dfff00d451f",
+          "type": "pergunta",
+          "title": "",
+          "content": "Mas o fato de não saber muda as consequências reais? E o direito de decidir sobre informações importantes?",
+          "notes": "Capturado no Debate ao Vivo. Transcrição automática pode conter erros.",
+          "voiceId": "eu2",
+          "classification": "",
+          "state": "ativo",
+          "x": 1070,
+          "y": 80,
+          "collapsed": false,
+          "createdAt": "2026-10-22T18:03:40.000Z",
+          "updatedAt": "2026-10-22T18:05:30.000Z",
+          "origin": {
+            "kind": "live",
+            "sessionId": "live_75751d80-ac22-46e1-817d-b0b6a4a993f3",
+            "segmentId": "turn_61658403-b244-459c-9a0f-f9508af2d488"
+          },
+          "annotations": [],
+          "discussion": [],
+          "fallacies": []
+        },
+        {
+          "id": "node_30a07759-3024-4317-bf11-cebd2d769d7c",
+          "type": "premissa",
+          "title": "",
+          "content": "Parece que estamos distinguindo experiência emocional, consequências e consentimento. Preciso continuar depois.",
+          "notes": "Capturado no Debate ao Vivo. Transcrição automática pode conter erros.",
+          "voiceId": "observador",
+          "classification": "",
+          "state": "ativo",
+          "x": 1425,
+          "y": 40,
+          "collapsed": false,
+          "createdAt": "2026-10-22T18:04:35.000Z",
+          "updatedAt": "2026-10-22T18:05:30.000Z",
+          "origin": {
+            "kind": "live",
+            "sessionId": "live_75751d80-ac22-46e1-817d-b0b6a4a993f3",
+            "segmentId": "turn_ddd33b16-bf4c-4d6f-bf18-a3563cba7ffb"
+          },
+          "annotations": [],
+          "discussion": [],
+          "fallacies": []
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_098eb0b2-98d9-4817-8bcc-6e2f4eab41c1",
+          "source": "node_c6c402ae-cd49-4f75-bcf1-007aca317df2",
+          "target": "node_096d0e5a-6a0f-4635-8ccb-e90aa0bfef7c",
+          "relation": "continua",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_24ca4486-ef96-4eb3-a1c3-86530ecdfabb",
+          "source": "node_096d0e5a-6a0f-4635-8ccb-e90aa0bfef7c",
+          "target": "node_0d602bd5-fd0a-42a7-bc30-1e043b8c9d9b",
+          "relation": "contesta",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_10c2df3a-fed4-42d7-9252-afc6b2825894",
+          "source": "node_0d602bd5-fd0a-42a7-bc30-1e043b8c9d9b",
+          "target": "node_5e21d4d7-0f1a-4a10-889d-3631fa3efef0",
+          "relation": "continua",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_2041060a-4b99-457c-94e5-fba63abc7173",
+          "source": "node_0d602bd5-fd0a-42a7-bc30-1e043b8c9d9b",
+          "target": "node_2cdc42df-d6d6-4c79-b161-cbdcf210ad52",
+          "relation": "exemplifica",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_53bb66be-8e73-4336-8e2f-091f7666a323",
+          "source": "node_2cdc42df-d6d6-4c79-b161-cbdcf210ad52",
+          "target": "node_6f16b357-ce16-4523-bed0-7e377fcafa8f",
+          "relation": "contesta",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_90efefd6-dd17-423f-8a00-e277d38f2553",
+          "source": "node_5e21d4d7-0f1a-4a10-889d-3631fa3efef0",
+          "target": "node_5b7df702-520e-4809-a19f-9f1f40d08dfe",
+          "relation": "continua",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_ef3df22d-7a6c-43d6-90a9-4256e36a77e4",
+          "source": "node_6f16b357-ce16-4523-bed0-7e377fcafa8f",
+          "target": "node_5b7df702-520e-4809-a19f-9f1f40d08dfe",
+          "relation": "exemplifica",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_90873636-17d1-46de-aa2b-99cb9b792606",
+          "source": "node_5b7df702-520e-4809-a19f-9f1f40d08dfe",
+          "target": "node_cb574cd6-8c97-496f-b5af-8a6fdb5935ce",
+          "relation": "reformula",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_773316be-5a92-47b1-8ffc-d07cdd9832f2",
+          "source": "node_cb574cd6-8c97-496f-b5af-8a6fdb5935ce",
+          "target": "node_4f0ce840-5b7d-408a-af8d-9f6c9fd9c2bf",
+          "relation": "apoia",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_f728448a-ca46-4e00-8366-3a4d4043de78",
+          "source": "node_4f0ce840-5b7d-408a-af8d-9f6c9fd9c2bf",
+          "target": "node_c6c402ae-cd49-4f75-bcf1-007aca317df2",
+          "relation": "retorna",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_1d43f2e3-a772-4136-818c-3750fca3a03d",
+          "source": "node_4f0ce840-5b7d-408a-af8d-9f6c9fd9c2bf",
+          "target": "node_0e6b8782-2524-44c7-a413-958717d1035f",
+          "relation": "continua",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_8a932f95-d588-49ce-9b68-b0b77ed42b36",
+          "source": "node_c6c402ae-cd49-4f75-bcf1-007aca317df2",
+          "target": "node_f370e96c-bd6e-4fcf-90f2-801716165945",
+          "relation": "continua",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_c6557133-5ff4-425a-8bdf-28d7f25bfbef",
+          "source": "node_f370e96c-bd6e-4fcf-90f2-801716165945",
+          "target": "node_1394ef76-33ae-41f2-b4fc-0f623b084f69",
+          "relation": "continua",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_114198e7-e60b-440b-9025-473cc19c6acd",
+          "source": "node_1394ef76-33ae-41f2-b4fc-0f623b084f69",
+          "target": "node_24bd8fd8-5f12-4d64-bb6e-7bb28dad02b4",
+          "relation": "continua",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_de53f20f-5d07-4748-9617-10200cb76e67",
+          "source": "node_24bd8fd8-5f12-4d64-bb6e-7bb28dad02b4",
+          "target": "node_d027bc2e-36ad-4683-894b-d1b8146b21be",
+          "relation": "continua",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_d42d1395-f7f1-4f2c-9fb8-6a9b7359a742",
+          "source": "node_d027bc2e-36ad-4683-894b-d1b8146b21be",
+          "target": "node_d4dd7710-d360-4c55-a661-49c683eaa5ea",
+          "relation": "continua",
+          "createdAt": "2026-10-23T05:21:31.434Z"
+        },
+        {
+          "id": "edge_5fd264b1-81b7-4fe8-be77-f0daec015409",
+          "source": "node_c6c402ae-cd49-4f75-bcf1-007aca317df2",
+          "target": "node_5f1d8898-50ac-4ffb-8882-a2b760cd5053",
+          "relation": "continua",
+          "createdAt": "2026-10-22T18:05:30.000Z"
+        },
+        {
+          "id": "edge_cd1b0d40-a838-47dd-a626-e5d834d73bb7",
+          "source": "node_5f1d8898-50ac-4ffb-8882-a2b760cd5053",
+          "target": "node_35fcac43-e04c-4e1e-b61f-ce06003a652a",
+          "relation": "continua",
+          "createdAt": "2026-10-22T18:05:30.000Z"
+        },
+        {
+          "id": "edge_ff5bc0e7-1339-4af2-a94f-1d96d7182a9d",
+          "source": "node_35fcac43-e04c-4e1e-b61f-ce06003a652a",
+          "target": "node_3907a5e4-6b7b-43dc-a20f-4dfff00d451f",
+          "relation": "continua",
+          "createdAt": "2026-10-22T18:05:30.000Z"
+        },
+        {
+          "id": "edge_9720298f-c14e-4baf-bbe0-ffeff8bf5ec7",
+          "source": "node_3907a5e4-6b7b-43dc-a20f-4dfff00d451f",
+          "target": "node_30a07759-3024-4317-bf11-cebd2d769d7c",
+          "relation": "continua",
+          "createdAt": "2026-10-22T18:05:30.000Z"
+        }
+      ]
+    }
+  ]
+}

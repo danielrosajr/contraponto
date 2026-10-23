@@ -1,4 +1,26 @@
-# Histórico de versões — CONTRAPONTO
+# CONTRAPONTO — Histórico de versões
+
+## v0.5.0 — Debate ao Vivo (23/10/2026)
+
+- 🎙 Modo Debate ao Vivo dentro da mesma reflexão, iniciado de um bloco selecionado ou como novo trecho.
+- Alternância imediata entre as três perspectivas iniciais, mais vozes adicionadas enquanto o debate acontece; atalhos 1–9 para as primeiras nove.
+- Gravação de áudio local **opcional** com MediaRecorder e armazenamento em IndexedDB separado do backup JSON; download, reprodução aproximada de trechos e exclusão de áudio.
+- Transcrição automática **opcional**, dependente da SpeechRecognition do navegador; quando não há suporte, registro manual por texto permanece disponível.
+- Texto da conversa salvo progressivamente, com registro de horários, voz, períodos de turno e indicação de som detectado quando há microfone capturado.
+- Pausar, retomar e encerrar com motivos diferentes (interrompido, sem resposta, provisório ou concluído).
+- Conversão revisável da transcrição em blocos do mapa, com sugestão de tipos e relações, preservação de voz e horário e marcador especial 🎙 de origem ao vivo.
+- Marcação voluntária de possíveis falácias em cada fala e sinais fracos por palavras-chave, sem gerar veredictos automáticos.
+- Relatórios e Markdown exportado incluem as capturas e os tempos por voz; tempo ativo do aplicativo e duração dos turnos permanecem separados para evitar somas duplicadas.
+- Tutorial guiado expandido com etapa de Debate ao Vivo e ajuda contextual na tela de captura.
+- Migração de armazenamento IndexedDB v1 → v2, schema lógico v5; compatibilidade com dados dos backups anteriores.
+- Testes automatizados e de interface simulada ampliados; atualização do cache offline.
+
+### Avisos de privacidade e limites
+
+- O reconhecimento de fala **pode enviar áudio a serviços externos do navegador**; requer ativação explícita e pode não funcionar offline ou em todos os aparelhos.
+- O áudio local não é criptografado, pode ocupar bastante armazenamento e **não viaja no backup JSON**. Baixe gravações importantes separadamente.
+- A detecção de voz por volume não diferencia voz humana de ruído. Sem gravação, o sistema mostra tempo de turno, não tempo falado real.
+- A gravação em abas de fundo pode ser interrompida pelo sistema operacional; ao ocultar a página, esta versão pausa a sessão por segurança.
 
 ## [0.4.0] — Apresentação Guiada (23/10/2026)
 
