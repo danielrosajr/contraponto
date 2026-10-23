@@ -1,5 +1,6 @@
 import {EN_TYPE_RULES,EN_CLASS_RULES} from './inference-en.js';
 import {guessThoughtLanguage,isEnglishLanguage} from './language.js';
+import {detectSpokenQuestion} from './questions.js';
 // Heurísticas transparentes e locais. Sugestões, nunca classificação factual/ética automática.
 // Não classificam se uma ideia é verdadeira, correta, saudável ou moralmente aceitável.
 const has=(t,re)=>re.test(t);
@@ -42,6 +43,15 @@ export function suggestThought(input,locale='auto'){const original=String(input|
  const classRules=isEnglishLanguage(lang)?EN_CLASS_RULES:CLASS_RULES;
  if(!t)return {type:null,classification:null,confidence:'sem texto',explanation:'Escreva algo para receber sugestões.',alternatives:[]};
  const types=evaluate(t,typeRules,'comentario');
+ // Sem pontuação, uma pergunta falada pode ser identificada pela forma linguística.
+ // Mantém cenário e objeção quando suas pistas forem mais fortes; nada é comprovado.
+ const question=detectSpokenQuestion(original,lang);
+ if(question.question&&question.confidence==='alta'&&!/[?？]\s*$/.test(original) && !(isEnglishLanguage(lang)&&/^what if\b/i.test(original))){
+   const current=types.find(x=>x.type==='pergunta');
+   if(current){current.score+=5;current.reasons.unshift('Estrutura de pergunta reconhecida mesmo sem ponto de interrogação.');}
+   else types.push({type:'pergunta',score:6,reasons:['Estrutura de pergunta reconhecida mesmo sem ponto de interrogação.']});
+   types.sort((a,b)=>b.score-a.score);
+ }
  if(types[0]?.score===0 && t.split(/\s+/).length>=9 && !/[?？]\s*$/.test(original)){
    types[0]={type:'premissa',score:1,reasons:['Frase declarativa extensa sem pistas específicas: pode servir como ponto de partida. Também pode ser apenas um comentário.']};
    types.push({type:'comentario',score:0,reasons:['Observação livre, caso não deseje formular uma afirmação.']});

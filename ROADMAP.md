@@ -1,6 +1,10 @@
 # CONTRAPONTO — Roadmap
 
-## v0.5.1 — Debate Bilíngue — implementado
+## v0.5.2 — Perguntas e Destaques — implementado
+- Detecção conservadora de perguntas sem interrogação em PT/EN, com revisão manual; nenhuma inferência de entonação.
+- Adição de ? ao encerrar turnos claros; classificação em lote com antes/depois nos nós por 30 s, e opção de encerrar destaque.
+
+## v0.5.1 — Debate Bilíngue — mantido
 - Seleção por sessão `pt-BR`, `en-US` ou `en-GB`; transcrição sem tradução e classificação local em português/inglês.
 - Idioma preservado em turnos, nós convertidos, backups, relatórios e exportações.
 
@@ -20,7 +24,7 @@
 - Xadrez de argumentos como metáfora e animação guiada; sem confundir avaliação retórica com validade lógica nem inventar partidas legais.
 
 
-### Após o v0.5.1 — opções futuras
+### Após o v0.5.2 — opções futuras
 - Alternar idioma por turno dentro de uma sessão, com indicação visual e sem sobrescrever transcrições anteriores.
 - Importar arquivo de áudio gravado para transcrição local quando existir uma solução viável, opt-in e confiável.
 - Revisão da classificação de falas com trechos bilíngues e vocabulário informal.

@@ -1,4 +1,4 @@
-# CONTRAPONTO v0.5.1 — Debate Bilíngue
+# CONTRAPONTO v0.5.2 — Perguntas e Destaques
 
 Aplicativo web de mapa de raciocínios, mobile-first, interface em português brasileiro e captura em português ou inglês, sem cadastro e sem backend obrigatório. **Esta versão amplia a conversa falada para português e inglês dentro do próprio mapa**, sem remover o editor, a apresentação HTML, os relatórios, as exportações, o tutorial ou o changelog.
 
@@ -11,6 +11,23 @@ python3 -m http.server 8080
 ```
 
 Acesse **http://localhost:8080**. O modo gravação exige permissão de microfone e contexto seguro (`https://` ou `localhost`). Para publicar, mantenha o workflow de GitHub Pages já incluído em `.github/workflows/deploy.yml`.
+
+## Novidades da v0.5.2
+
+### Reconhecimento de perguntas sem `?`
+
+- Em debates em **português** e **inglês** (`pt-BR`, `en-US`, `en-GB`), perguntas com começo reconhecível, como "Você acha que...", "Mas por que...", "Do you think...", "Why..." ou "Could I...", podem receber um ponto de interrogação **ao terminar o turno**, ao alternar de voz ou pausar.
+- A classificação assistida consegue reconhecer essas perguntas mesmo quando a transcrição não contém o ponto de interrogação. A fala **"What if..."** continua sendo sugerida como cenário hipotético, embora possa receber `?`.
+- Na transcrição, o botão **? É pergunta** permite inserir manualmente o sinal, se o reconhecimento não conseguir identificá-lo. **✎ Corrigir** permite alterar livremente o texto. Correção manual tem precedência sobre pontuação posterior.
+- A detecção é uma **heurística textual local**; não analisa entonação ou áudio. Não deve mudar declarativas genéricas, relatos emocionais nem trechos com várias sentenças em uma única fala. Revise os resultados antes de converter para o mapa.
+
+### Destaque temporário da classificação em lote
+
+- Após revisar e aplicar sugestões a vários blocos, o resumo anterior permanece disponível. Quando você fecha o resumo, o mapa destaca por **30 segundos** somente os blocos efetivamente alterados.
+- Cada bloco afetado mostra **Tipo** e/ou **Natureza**: ~~valor anterior~~ → **valor novo**, com cores e borda de destaque. As informações também são legíveis no modo claro.
+- O banner **Encerrar destaque** interrompe a visualização antes dos 30 segundos. Ao terminar o tempo, todos os blocos retornam ao visual normal, sem alterar os dados.
+- Desfazer o lote remove também o destaque. Quando nenhuma mudança é aplicada, o aplicativo informa que não houve alterações e não exibe realces artificiais.
+- Esta comparação é efêmera, **não entra no JSON nem no histórico lógico**; o próprio histórico de desfazer e a classificação escolhida continuam preservados.
 
 ## Novo recurso: Debate ao Vivo
 
@@ -61,9 +78,9 @@ Ao duplicar uma reflexão com debates ao vivo, a transcrição é copiada, mas a
 
 ### Tutorial e novidades
 
-- O botão **▶ Tutorial** continua disponível e agora inclui as etapas **Debate ao Vivo** e **Idioma da conversa**.
+- O botão **▶ Tutorial** continua disponível com etapas sobre **perguntas faladas** e **destaques temporários após classificação em lote**.
 - Dentro da própria tela ao vivo, toque **? Como usar** para ver instruções curtas de alternância de vozes, transcrição, pausas, classificação e privacidade.
-- O botão **v0.5.1 ▾** mostra as mudanças desta versão e das anteriores. Consulte `CHANGELOG.md` para o registro completo.
+- O botão **v0.5.2 ▾** mostra as mudanças desta versão e das anteriores. Consulte `CHANGELOG.md` para o registro completo.
 
 ## Testes
 
@@ -77,24 +94,11 @@ Os testes automatizados cobrem compatibilidade, criação, métricas, conversão
 
 ## GitHub / release
 
-- **Repositório:** seu repositório atual do CONTRAPONTO.
-- **Branch:** `feat/contraponto-v0.5.1-debate-bilingue`
-- **Versão e tag:** `0.5.1` / `v0.5.1`
-- **Release:** `CONTRAPONTO v0.5.1 — Debate Bilíngue`
-- **Commit:** `feat: adicionar transcricao e classificacao bilingue no debate ao vivo`
+- **Branch sugerida:** `feat/contraponto-v0.5.2-perguntas-destaques`
+- **Versão e tag:** `0.5.2` / `v0.5.2`
+- **Release:** `CONTRAPONTO v0.5.2 — Perguntas e Destaques`
+- **Commit:** `feat: detectar perguntas faladas e destacar alteracoes em lote`
 
-Substitua os arquivos anteriores pelo conteúdo do ZIP, sem colocar uma pasta extra na raiz do repositório. Mantenha `src/`, `assets/`, `samples/`, `tests/` e `.github/workflows/`. **Arquivos novos nesta atualização:** `src/language.js`, `src/inference-en.js`, `tests/bilingual.test.mjs`. **Arquivos atualizados:** `src/live.js`, `src/live-ui.js`, `src/inference.js`, `src/model.js`, `src/main.js`, `src/export.js`, `src/metrics.js`, `src/release.js`, `index.html`, `sw.js`, `CHANGELOG.md`, `README.md`, `ROADMAP.md`, `package.json` e testes de versão/schema. Os demais arquivos existentes devem ser preservados.
+Para atualizar o projeto anterior, substitua os arquivos do repositório pelos deste ZIP. Adicione `src/questions.js`, `src/batch-visual.js` e `tests/questions.test.mjs`, atualize `sw.js` e preserve a configuração de Pages. Não há alterações no formato dos backups nem necessidade de servidor.
 
-Para publicar, crie um pull request da branch para `main`, e então o release `v0.5.1`. A configuração de Pages deve usar **GitHub Actions** e o workflow já existente. Se aparecer a versão antiga após o deploy, atualize a página para receber o cache `contraponto-0.5.1`.
-
-
-## Exemplo em inglês
-
-O arquivo `samples/english-debate-demo.json` contém uma sessão simulada em `en-US` com três falas e os blocos correspondentes; pode ser importado pelo menu **Importar JSON**. Faça backup da sua biblioteca primeiro.
-
-## Limitações conhecidas do reconhecimento
-
-1. O reconhecimento de fala depende do navegador e, em algumas implementações, de servidores externos. Usar `en-US`/`en-GB` configura uma preferência, não garante suporte nem reconhecimento fiel.
-2. O aplicativo não detecta automaticamente a troca de idioma dentro de uma gravação. É possível criar sessões diferentes em português e inglês na mesma reflexão.
-3. Gravação de áudio não transcreve automaticamente gravações passadas; se o navegador não oferecer reconhecimento, o áudio pode ser baixado e os turnos podem ser corrigidos manualmente.
-4. A classificação bilíngue usa expressões regulares transparentes e pode errar com frases curtas, ironia, informalidade ou *code-switching*. Nenhuma classificação deve ser confundida com validação lógica ou moral.
+**Aviso:** exporte um backup JSON antes de atualizar. Na primeira visita após o deploy, recarregue a página para receber o novo cache offline `contraponto-0.5.2`.

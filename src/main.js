@@ -4,6 +4,7 @@ import {markdownFor,promptFor,downloadText,downloadSvgOrPng} from './export.js';
 import {GLOSSARY,GLOSSARY_GROUPS,definition} from './glossary.js';
 import {suggestThought} from './inference.js';
 import {planBulkClassification,summarizeBulkClassification} from './batch.js';
+import {batchVisualMap,BATCH_HIGHLIGHT_MS} from './batch-visual.js';
 import {neighbours,pathTo,pathRecap,suspectedGaps,branchIdFor,formatDuration} from './journey.js';
 import {FALLACIES,FALLACY_STATUSES} from './fallacies.js';
 import {metricsFor,reportMarkdown} from './metrics.js';
@@ -21,6 +22,8 @@ let undo=[],redo=[],saveTimer=null,toastTimer=null,modalCleanup=null,miniExtent=
 let journeyNodes=new Set(),journeyEdges=new Set(),journeyTimer=null,tracker=null,trackingTimer=null,navHistory=[];
 let readingMode=false,readerOptions=[],readerDirection=null;
 let liveUI=null;
+// Alterações visuais temporárias: não fazem parte do backup nem modificam os dados.
+let batchVisuals=new Map(),batchVisualTimer=null,batchVisualReflectionId=null;
 let tutorialStep=-1,tutorialOrigin=null,tutorialHighlight=null;
 const IDLE_MS=5*60000;
 const isMobile=()=>innerWidth<=800;
@@ -51,6 +54,21 @@ function toast(message,{duration=3100,kind='default'}={}){
  const el=$('toast');el.textContent=message;el.dataset.kind=kind;
  el.classList.add('show');clearTimeout(toastTimer);
  toastTimer=setTimeout(()=>{el.classList.remove('show');el.removeAttribute('data-kind');},duration);
+}
+function clearBatchVisuals(){
+ clearTimeout(batchVisualTimer);batchVisualTimer=null;batchVisuals.clear();batchVisualReflectionId=null;
+ $('batchVisualBanner')?.classList.add('hidden');
+ if(activeId&&view==='map')renderGraph();
+}
+function startBatchVisuals(changes){
+ clearTimeout(batchVisualTimer);batchVisuals=batchVisualMap(changes);
+ batchVisualReflectionId=activeId;
+ if(!batchVisuals.size)return;
+ changeView('map');
+ const banner=$('batchVisualBanner');
+ if(banner){banner.querySelector('[data-batch-count]').textContent=String(batchVisuals.size);banner.classList.remove('hidden');}
+ renderGraph();
+ batchVisualTimer=setTimeout(clearBatchVisuals,BATCH_HIGHLIGHT_MS);
 }
 function batchToast(stats){
  const lead=stats.changed?`✓ ${stats.changed} ${stats.changed===1?'bloco atualizado':'blocos atualizados'}`:'✓ Análise concluída, sem alterações';
@@ -100,8 +118,8 @@ function pushCheckpoint(old){undo.push(old);if(undo.length>50)undo.shift();redo=
 function changed(){const r=reflect();if(r){r.updatedAt=now();persist();renderWorkspace();}else {persist();renderLibrary();}}
 function mutation(fn){checkpoint();fn();changed();}
 function restoreSnapshot(s){const idx=app.reflections.findIndex(r=>r.id===activeId);if(idx<0)return;app.reflections[idx]=s;if(selectedId&&!node(selectedId))selectedId=null;changed();}
-function undoAction(){if(!undo.length)return toast('Nada para desfazer.');redo.push(clone(reflect()));restoreSnapshot(undo.pop());}
-function redoAction(){if(!redo.length)return toast('Nada para refazer.');undo.push(clone(reflect()));restoreSnapshot(redo.pop());}
+function undoAction(){if(!undo.length)return toast('Nada para desfazer.');if(batchVisuals.size)clearBatchVisuals();redo.push(clone(reflect()));restoreSnapshot(undo.pop());}
+function redoAction(){if(!redo.length)return toast('Nada para refazer.');if(batchVisuals.size)clearBatchVisuals();undo.push(clone(reflect()));restoreSnapshot(redo.pop());}
 
 function openModal(title,html,setup,{wide=false}={}){closeModal();$('modalTitle').textContent=title;$('modal').querySelector('.modal-card').classList.toggle('modal-wide',wide);$('modalContent').innerHTML=`<div class="modal-body">${html}</div>`;$('modal').classList.remove('hidden');if(setup)modalCleanup=setup($('modalContent'))||null;
  requestAnimationFrame(()=> $('modalContent').querySelector('[autofocus]')?.focus());}
@@ -157,9 +175,11 @@ function getVisible(){const r=reflect();if(!r)return new Set();const sources=new
 }
 const nodeHeights=new Map();
 function nodeMetrics(id){const n=node(id);if(!n)return {h:170};return {h:nodeHeights.get(id)||190};}
-function renderGraph(){const r=reflect();if(!r)return;visible=getVisible();$('graphEmpty').classList.toggle('hidden',!!r.nodes.length);
+function renderGraph(){const r=reflect();if(!r)return;if(batchVisualReflectionId&&batchVisualReflectionId!==activeId){clearTimeout(batchVisualTimer);batchVisuals.clear();batchVisualReflectionId=null;$('batchVisualBanner')?.classList.add('hidden');}visible=getVisible();$('graphEmpty').classList.toggle('hidden',!!r.nodes.length);
  $('graphNodes').innerHTML=r.nodes.filter(n=>visible.has(n.id)).map(n=>{const t=TYPES[n.type]||TYPES.premissa,v=voice(n.voiceId),childCount=r.edges.filter(e=>e.source===n.id&&e.relation!=='retorna').length;
- return `<div class="thought-node ${selectedId===n.id?'selected':''} ${journeyNodes.size?(journeyNodes.has(n.id)?'journey-lit':'journey-muted'):''} ${n.state==='abandonado'?'inactive':''}" data-node="${safeText(n.id)}" style="left:${n.x}px;top:${n.y}px;--node-color:${t[2]}"><div class="node-inner"><div class="node-label"><span>${safeText(t[1])} ${safeText(t[0])}</span>${childCount?`<span class="collapse-indicator" title="Clique duas vezes no indicador para recolher ou expandir">${n.collapsed?'▸':'▾'} ${childCount}</span>`:''}</div><div class="node-title">${safeText(n.title||t[0])}</div><div class="node-content">${safeText(n.content)}</div><div class="node-footer"><span class="voice-chip"><i class="voice-dot" style="--voice-color:${safeText(v?.color||'#90a6c1')}"></i>${safeText(v?.name||'Sem voz')}</span><span>${n.annotations?.length?`◫ ${n.annotations.length} · `:''}${n.fallacies?.length?`⚑ ${n.fallacies.length} · `:''}${n.origin?.kind==='live'?'🎙 capturado ao vivo · ':''}${safeText(STATES[n.state]||'Ativo')}</span></div></div></div>`;
+ const visual=batchVisuals.get(n.id);
+ const diffHTML=visual?`<div class="batch-node-preview" aria-label="Classificação atualizada"><div class="batch-node-heading">✦ Alterado pela sugestão</div>${visual.fields.map(f=>{const before=f.key==='type'?(TYPES[f.before]?.[0]||f.before):(CLASSES[f.before]||'Não classificado');const after=f.key==='type'?(TYPES[f.after]?.[0]||f.after):(CLASSES[f.after]||'Não classificado');return `<div class="batch-node-diff"><span>${f.label}:</span> <s>${safeText(before)}</s><span aria-hidden="true">→</span><b>${safeText(after)}</b></div>`;}).join('')}</div>`:'';
+ return `<div class="thought-node ${selectedId===n.id?'selected':''} ${journeyNodes.size?(journeyNodes.has(n.id)?'journey-lit':'journey-muted'):''} ${n.state==='abandonado'?'inactive':''} ${visual?'batch-node-highlight':''}" data-node="${safeText(n.id)}" style="left:${n.x}px;top:${n.y}px;--node-color:${t[2]}"><div class="node-inner"><div class="node-label"><span>${safeText(t[1])} ${safeText(t[0])}</span>${childCount?`<span class="collapse-indicator" title="Clique duas vezes no indicador para recolher ou expandir">${n.collapsed?'▸':'▾'} ${childCount}</span>`:''}</div><div class="node-title">${safeText(n.title||t[0])}</div><div class="node-content">${safeText(n.content)}</div><div class="node-footer"><span class="voice-chip"><i class="voice-dot" style="--voice-color:${safeText(v?.color||'#90a6c1')}"></i>${safeText(v?.name||'Sem voz')}</span><span>${n.annotations?.length?`◫ ${n.annotations.length} · `:''}${n.fallacies?.length?`⚑ ${n.fallacies.length} · `:''}${n.origin?.kind==='live'?'🎙 capturado ao vivo · ':''}${safeText(STATES[n.state]||'Ativo')}</span></div>${diffHTML}</div></div>`;
  }).join('');
  for(const el of $('graphNodes').children)nodeHeights.set(el.dataset.node,el.offsetHeight);
  renderEdges();updateTransform();drawMini();$('selectionHint').textContent=selectedId?'Use ← e → ou abra o modo leitura para seguir as conexões.':'Escolha um pensamento para continuar seu raciocínio.';updateNavigator();
@@ -442,9 +462,9 @@ function showBatchReview(changes,stats){
  }).join('');
  let notifyWhenClosed=true;
  openModal('Resumo das sugestões aplicadas',`${batchSummaryHTML(stats)}<p class="small-note">Suas notas, vozes, conexões e posições foram preservadas. Use <b>Revisar</b> para corrigir cada bloco ou <b>Desfazer lote</b> para recuperar as classificações anteriores em uma única ação. Se editar outro bloco antes, o histórico de desfazer seguirá a ordem das alterações.</p><div class="batch-list">${items}</div><div class="modal-actions"><button class="secondary" id="revertBatch" type="button">↶ Desfazer lote</button><button class="primary" type="button" data-close-modal>Concluir revisão depois</button></div>`,el=>{
-  el.querySelector('#revertBatch').onclick=()=>{notifyWhenClosed=false;closeModal();undoAction();toast('Lote desfeito; classificações anteriores restauradas.');};
+  el.querySelector('#revertBatch').onclick=()=>{notifyWhenClosed=false;closeModal();if(batchVisuals.size)clearBatchVisuals();undoAction();toast('Lote desfeito; classificações anteriores restauradas.');};
   el.querySelectorAll('[data-review-node]').forEach(button=>button.onclick=()=>{notifyWhenClosed=false;const id=button.dataset.reviewNode;closeModal();focusNode(id);openNodeEditor(id);});
-  return ()=>{if(notifyWhenClosed)batchToast(stats);};
+  return ()=>{if(notifyWhenClosed){startBatchVisuals(changes);batchToast(stats);}};
  },{wide:true});
 }
 const QUICK = {
@@ -636,7 +656,7 @@ function wireEvents(){
  $('emptyAdd').onclick=()=>openNodeEditor();$('historyAdd').onclick=()=>openNodeEditor();
  $('challengeSidebar').onclick=challenge;$('voicesBtn').onclick=editVoices;
  $('centerBtn').onclick=fitMap;$('fitMap').onclick=fitMap;$('focusRootBtn').onclick=()=>{const id=reflect()?.nodes.find(n=>n.type==='pergunta')?.id||reflect()?.nodes[0]?.id;if(id)focusNode(id);};
- $('layoutBtn').onclick=autoLayout;$('batchClassifyBtn').onclick=batchClassify;$('zoomIn').onclick=()=>setZoom(zoom*1.2);$('zoomOut').onclick=()=>setZoom(zoom/1.2);
+ $('clearBatchVisual').onclick=clearBatchVisuals;$('layoutBtn').onclick=autoLayout;$('batchClassifyBtn').onclick=batchClassify;$('zoomIn').onclick=()=>setZoom(zoom*1.2);$('zoomOut').onclick=()=>setZoom(zoom/1.2);
  $('connectToolbar').onclick=()=>connectModal();$('emphasisToggle').onchange=e=>{showMainline=e.target.checked;renderEdges();};
  $('undoBtn').onclick=undoAction;$('redoBtn').onclick=redoAction;
  $('inspectorContent').onclick=e=>{const noteId=e.target.closest('[data-remove-note]')?.dataset.removeNote;if(noteId)return removeMarginNote(noteId);const discussionId=e.target.closest('[data-remove-discussion]')?.dataset.removeDiscussion;if(discussionId)return removeDiscussionMark(discussionId);const fallacyId=e.target.closest('[data-edit-fallacy]')?.dataset.editFallacy;if(fallacyId)return markFallacy(fallacyId);const q=e.target.closest('[data-quick]')?.dataset.quick;if(q)return quick(q);
@@ -678,7 +698,7 @@ function wireEvents(){
 function applyTheme(){document.body.dataset.theme=app.settings.theme==='light'?'light':'dark';document.querySelector('meta[name="theme-color"]').content=app.settings.theme==='light'?'#f1f4fa':'#0b1220';}
 async function boot(){try{app=await readApp();if(!app) {app=initialData();await writeApp(app);}if(!Array.isArray(app.reflections))throw Error('Dados locais inválidos.');app.settings||={theme:'dark'};app.reflections=normalizeImported({reflections:app.reflections});app.schemaVersion=6;}
  catch(e){console.error('Erro ao carregar',e);if(confirm('Não foi possível ler os dados locais. Deseja abrir com uma biblioteca temporária? Não será apagado nenhum backup externo.'))app=initialData();else {document.body.innerHTML='<main style="font:16px sans-serif;padding:32px">Não foi possível acessar o armazenamento local. Habilite IndexedDB no navegador e recarregue.</main>';return;}}
- applyTheme();liveUI=new LiveUI({getReflection:reflect,getSettings:()=>app.settings,save:persist,mutate:mutation,focusNode,toast,openModal,closeModal});wireEvents();renderLibrary();if(app.settings.lastSeenVersion!==APP_VERSION){toast(`CONTRAPONTO v${APP_VERSION}: Debate Bilíngue: transcrição e classificação em português ou inglês. Veja Novidades.`,{duration:7000});}
+ applyTheme();liveUI=new LiveUI({getReflection:reflect,getSettings:()=>app.settings,save:persist,mutate:mutation,focusNode,toast,openModal,closeModal});wireEvents();renderLibrary();if(app.settings.lastSeenVersion!==APP_VERSION){toast(`CONTRAPONTO v${APP_VERSION}: Perguntas e Destaques: reconhecimento de interrogações e revisão visual em lote. Veja Novidades.`,{duration:7000});}
  if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('Offline indisponível:',err));
 }
 boot();

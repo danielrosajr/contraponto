@@ -199,3 +199,15 @@ body:has(.live-overlay:not(.hidden)) .tour-card{z-index:1900}
  .live-file-tools{flex-shrink:0}
  .live-header-right button{padding:7px 9px}
 }
+
+/* v0.5.2 — feedback visual temporário das classificações em lote */
+.thought-node.batch-node-highlight{z-index:9;border-color:#77dcb0;box-shadow:0 0 0 3px #65d5ab,0 0 24px #65d5ab75;animation:batch-flash .9s ease-in-out 2}
+.batch-node-preview{background:linear-gradient(135deg,#3dcba917,transparent);border:1px solid #65d5ab99;border-radius:9px;padding:10px;margin-top:12px;font-size:11px;line-height:1.65}
+.batch-node-heading{font-size:10px;font-weight:800;color:#6bdab1;margin-bottom:5px;text-transform:uppercase;letter-spacing:.035em}
+.batch-node-diff{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px;overflow-wrap:anywhere}
+.batch-node-diff>span:first-child{color:var(--muted)}.batch-node-diff s{color:var(--faint)}.batch-node-diff b{color:var(--text)}
+.batch-visual-banner{position:absolute;z-index:20;top:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid #64c8a5;box-shadow:var(--shadow);color:var(--text);padding:9px 12px;border-radius:12px;font-size:11px;max-width:calc(100% - 20px)}
+.batch-visual-banner>span{min-width:0}.batch-visual-banner button{flex-shrink:0;padding:7px}
+@keyframes batch-flash{50%{box-shadow:0 0 0 5px #65d5ab,0 0 32px #65d5abab}}
+@media(prefers-reduced-motion:reduce){.thought-node.batch-node-highlight{animation:none}}
+@media(max-width:620px){.batch-visual-banner{left:8px;right:8px;transform:none;flex-wrap:wrap;font-size:10px}.batch-visual-banner button{padding:6px}}

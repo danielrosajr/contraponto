@@ -1,5 +1,15 @@
 # Changelog — CONTRAPONTO
 
+## [0.5.2] — 23/10/2026 · Perguntas e Destaques
+
+- No Debate ao Vivo, frases interrogativas em português e inglês passam a ser identificadas mesmo quando o reconhecimento de fala não fornece `?`.
+- Ao terminar cada turno ou pausar a sessão, o aplicativo adiciona `?` **somente em perguntas com estrutura linguística clara**, com opção de correção manual e botão **? É pergunta**.
+- A classificação local de blocos passa a considerar perguntas não pontuadas, inclusive no processo de conversão de Debate ao Vivo para mapa.
+- Depois de classificar vários blocos, o app mostra por **30 segundos** os blocos alterados com borda realçada, diferença riscada `antes → depois` de tipo e/ou natureza e um botão para encerrar o destaque.
+- Alterações visuais não alteram textos, relações, backup, voz ou histórico. Revisão e desfazer do lote foram preservados.
+- Tutorial guiado, ajuda do Debate ao Vivo, cache offline, testes, documentação e versão visível atualizados.
+- Limite conhecido: sem análise de entonação ou IA semântica, frases ambíguas continuam exigindo revisão humana.
+
 ## [0.5.1] — 23/10/2026 · Debate Bilíngue
 
 ### Novo
