@@ -14,12 +14,12 @@
   <div id="app">
     <header class="topbar">
       <button class="brand" id="brandBtn" title="Voltar à biblioteca"><span class="brand-mark">⌁</span><span>CONTRA<span class="brand-accent">PONTO</span><small>LABORATÓRIO DE PENSAMENTOS</small></span></button>
-      <div class="top-actions"><span class="privacy-label">● Privado neste dispositivo</span><button class="secondary small" id="globalGlossary" title="Consultar o minidicionário">? Dicionário</button><button class="icon-btn" id="themeBtn" title="Alternar tema" aria-label="Alternar modo escuro ou claro">◐</button><button class="secondary small" id="globalImport">Importar JSON</button></div>
+      <div class="top-actions"><span class="privacy-label">● Privado neste dispositivo</span><button class="secondary small" id="globalGlossary" title="Consultar o minidicionário">? Dicionário</button><button class="icon-btn" id="themeBtn" title="Alternar tema" aria-label="Alternar modo escuro ou claro">◐</button><button class="secondary small" id="globalTour" title="Aprender a usar">▶ Tutorial</button><button class="secondary small version-control" id="globalVersion" title="Versão instalada e novidades">v0.4.0 ▾</button><button class="secondary small" id="globalImport">Importar JSON</button></div>
     </header>
     <main id="library" class="library">
       <div class="library-hero"><div><span class="eyebrow">SEU ESPAÇO DE REFLEXÃO</span><h1>Pense além da primeira resposta<span class="dot">.</span></h1>
         <p>Uma pergunta pode abrir dezenas de caminhos. Explore argumentos, contradições e perspectivas sem perder o fio.</p>
-        <div class="hero-actions"><button class="primary" id="newReflection">＋ Nova reflexão</button><button class="secondary" id="openDemo">Explorar demonstração ↗</button></div>
+        <div class="hero-actions"><button class="primary" id="newReflection">＋ Nova reflexão</button><button class="secondary" id="openDemo">Explorar demonstração ↗</button><button class="secondary" id="tourLibrary">▶ Tutorial guiado</button></div>
       </div><div class="hero-art" aria-hidden="true"><div class="art-node art-a">Pergunta <b>?</b></div><div class="art-track"></div><div class="art-node art-b">Objeção <b>!</b></div><div class="art-node art-c">Conclusão <b>✓</b></div></div></div>
       <div class="lib-heading"><div><span class="eyebrow">MINHA BIBLIOTECA</span><h2>Reflexões <span id="reflectionCount" class="count">0</span></h2></div>
       <div class="filters"><input type="search" id="searchReflection" placeholder="Buscar reflexões..." aria-label="Buscar reflexões" /><select id="libraryFilter" aria-label="Filtrar reflexões"><option value="ativas">Ativas</option><option value="arquivadas">Arquivadas</option><option value="todas">Todas</option></select></div></div>
@@ -30,7 +30,7 @@
       <div class="workspace-heading">
         <button class="back-btn" id="backHome" title="Biblioteca">← <span>Biblioteca</span></button>
         <div class="workspace-title"><h1 id="currentTitle">Reflexão</h1><span id="currentQuestion"></span></div>
-        <div class="workspace-status"><span id="saveStatus">Tudo salvo</span><button class="secondary small hidden" id="resumeSession">↗ Retomar</button><button class="secondary small" id="reportBtn">◎ Relatório</button><button class="secondary small" id="finishBtn">✓ Concluir</button><span id="sessionClock" class="session-clock" title="Tempo ativo registrado nesta reflexão">00:00</span><button class="icon-btn" id="reflectionSettings" title="Editar detalhes da reflexão">⚙</button><button class="secondary small" id="exportBtn">↓ Exportar</button></div>
+        <div class="workspace-status"><span id="saveStatus">Tudo salvo</span><button class="secondary small hidden" id="resumeSession">↗ Retomar</button><button class="secondary small" id="reportBtn">◎ Relatório</button><button class="secondary small" id="shareBtn">♧ Compartilhar</button><button class="secondary small" id="finishBtn">✓ Concluir</button><span id="sessionClock" class="session-clock" title="Tempo ativo registrado nesta reflexão">00:00</span><button class="icon-btn" id="reflectionSettings" title="Editar detalhes da reflexão">⚙</button><button class="secondary small" id="exportBtn">↓ Exportar</button></div>
       </div>
       <div class="workspace-body">
         <aside class="sidebar" id="sidebar">
@@ -38,7 +38,7 @@
           <div class="aside-content">
             <div class="aside-section"><p class="aside-label">NAVEGAÇÃO</p><div class="tab-list"><button class="tab active" data-view="map">◉ Mapa de ideias</button><button class="tab" data-view="history">☷ Histórico</button></div></div>
             <div class="aside-section"><p class="aside-label">CRIAR</p><button class="wide-primary" id="addRoot">＋ Pensamento livre</button><button class="wide-secondary" id="challengeSidebar">✦ Desafiar pensamento</button><button class="wide-secondary" id="voicesBtn">☻ Minhas vozes internas</button><button class="wide-secondary" id="glossarySidebar">? Minidicionário</button><button class="wide-secondary" id="pauseSession">⏸ Registrar pausa</button></div>
-            <div class="aside-section"><p class="aside-label">ORGANIZAR</p><button class="plain-btn" id="layoutBtn">▦ Reorganizar automaticamente</button><button class="plain-btn" id="batchClassifyBtn">✦ Aplicar sugestões a todos os blocos</button><button class="plain-btn" id="gapSuggestionsBtn">◷ Procurar pausas não registradas</button><button class="plain-btn" id="reportSidebar">◎ Relatório do debate</button><button class="plain-btn" id="chessPromptBtn">♟ Prompt de xadrez</button><button class="plain-btn" id="focusRootBtn">⌖ Ir à pergunta principal</button><button class="plain-btn" id="centerBtn">⛶ Enquadrar todo o mapa</button></div>
+            <div class="aside-section"><p class="aside-label">ORGANIZAR</p><button class="plain-btn" id="layoutBtn">▦ Reorganizar automaticamente</button><button class="plain-btn" id="batchClassifyBtn">✦ Aplicar sugestões a todos os blocos</button><button class="plain-btn" id="gapSuggestionsBtn">◷ Procurar pausas não registradas</button><button class="plain-btn" id="reportSidebar">◎ Relatório do debate</button><button class="plain-btn" id="chessPromptBtn">♟ Prompt de xadrez</button><button class="plain-btn" id="analysisImportSidebar">✦ Importar sugestões da IA</button><button class="plain-btn" id="shareSidebar">♧ Apresentação guiada</button><button class="plain-btn" id="tourSidebar">▶ Tutorial guiado</button><button class="plain-btn" id="focusRootBtn">⌖ Ir à pergunta principal</button><button class="plain-btn" id="centerBtn">⛶ Enquadrar todo o mapa</button></div>
             <div class="aside-footer"><b>Atalhos</b><p><kbd>←</kbd> anterior · <kbd>→</kbd> próximo · <kbd>N</kbd> novo bloco · <kbd>Ctrl Z</kbd> desfazer</p><p>Arraste o fundo para navegar. Clique duas vezes num bloco para ler ampliado. Use scroll para zoom ou os botões + e −.</p></div>
           </div>
         </aside>
@@ -69,7 +69,7 @@
     </div>
   </div>
   <div id="modal" class="modal-overlay hidden" role="presentation"><div class="modal-card" role="dialog" aria-modal="true" aria-label="Editar informações"><div class="modal-header"><h2 id="modalTitle"></h2><button class="icon-btn" id="closeModal" aria-label="Fechar janela">×</button></div><div id="modalContent"></div></div></div>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div><div id="tourCard" class="tour-card hidden" role="dialog" aria-label="Tutorial guiado" aria-live="polite"></div>
   <input type="file" id="jsonFileInput" accept=".json,application/json" hidden />
   <script type="module" src="./src/main.js"></script>
 </body>

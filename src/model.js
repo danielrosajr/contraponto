@@ -38,7 +38,7 @@ export const defaultVoices = () => [
 export function newReflection(title,question,description='',tags=[]) {
   const ts=now(); const id=uid('reflection');
   return {id,title:title.trim(),question:question.trim(),description:description.trim(),status:'em andamento',archived:false,tags,
-    createdAt:ts,updatedAt:ts,completedAt:null,sessions:[],voices:defaultVoices(),nodes:[{id:uid('node'),type:'pergunta',title:'Pergunta principal',content:question.trim(),notes:'',classification:'',state:'ativo',voiceId:'eu1',x:0,y:0,collapsed:false,createdAt:ts,updatedAt:ts}],edges:[]};
+    createdAt:ts,updatedAt:ts,completedAt:null,closure:null,closures:[],sessions:[],voices:defaultVoices(),nodes:[{id:uid('node'),type:'pergunta',title:'Pergunta principal',content:question.trim(),notes:'',classification:'',state:'ativo',voiceId:'eu1',x:0,y:0,collapsed:false,createdAt:ts,updatedAt:ts}],edges:[]};
 }
 export function makeDemo() {
   const r = newReflection('O que significa ser afetado pelo desconhecido?', 'O que significa dizer que algo não me afeta se eu desconheço sua existência?',
@@ -64,10 +64,11 @@ export function makeDemo() {
   const link=(a,b,relation)=>r.edges.push({id:uid('edge'),source:r.nodes[a].id,target:r.nodes[b].id,relation,createdAt:ts});
   link(0,1,'continua');link(1,2,'contesta');link(2,3,'continua');link(2,4,'exemplifica');link(4,5,'contesta');
   link(3,6,'continua');link(5,6,'exemplifica');link(6,7,'reformula');link(7,8,'apoia');link(8,0,'retorna');link(8,9,'continua');link(0,10,'continua');link(10,11,'continua');link(11,12,'continua');link(12,13,'continua');link(13,14,'continua');
+  r.nodes[2].discussion=[{id:uid('mark'),key:'conversar',label:'Quero conversar sobre isso',note:'Como diferenciar sofrimento emocional e consequências?',createdAt:ts}];
   r.nodes[11].annotations=[{id:uid('note'),text:'Esta observação não precisa virar outro argumento. É apenas uma nota anexada ao bloco.',createdAt:ts}];
   return r;
 }
-export function initialData() { return {schemaVersion:3,settings:{theme:'dark'},reflections:[makeDemo()]}; }
+export function initialData() { return {schemaVersion:4,settings:{theme:'dark',lastSeenVersion:null,tutorialCompleted:false},reflections:[makeDemo()]}; }
 export function safeText(s) {return String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');}
 export function niceDate(iso) { return iso ? new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(iso)) : '—'; }
 export function cleanFilename(s){return String(s||'reflexao').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-|-$/g,'').toLowerCase().slice(0,65) || 'reflexao';}
@@ -86,6 +87,7 @@ export function normalizeImported(obj) {
         notes:String(n.notes||'').slice(0,30000),classification: n.classification in CLASSES ? n.classification:'',state:n.state in STATES ?n.state:'ativo',
         voiceId:String(n.voiceId||'eu1'),x:Number.isFinite(n.x)?Math.max(-100000,Math.min(100000,n.x)):0,
         y:Number.isFinite(n.y)?Math.max(-100000,Math.min(100000,n.y)):0,
+        discussion:Array.isArray(n.discussion)?n.discussion.slice(0,30).map(d=>({id:String(d?.id||uid('mark')).slice(0,130),key:['conversar','pendente','incomoda','mudanca','sentimento'].includes(d?.key)?d.key:'conversar',label:String(d?.label||'').slice(0,150),note:String(d?.note||'').slice(0,1500),createdAt:String(d?.createdAt||now())})):[],
         annotations:Array.isArray(n.annotations)?n.annotations.slice(0,100).map(a=>({id:String(a?.id||uid('note')).slice(0,130),text:String(a?.text||'').slice(0,6000),createdAt:a?.createdAt||now()})).filter(a=>a.text.trim()):[],
         fallacies:validFallacies(n.fallacies),suggestedGap:n.suggestedGap&&typeof n.suggestedGap==='object'?{from:String(n.suggestedGap.from||''),to:String(n.suggestedGap.to||''),durationMs:Number(n.suggestedGap.durationMs)||0}:null,collapsed:!!n.collapsed,createdAt:n.createdAt||now(),updatedAt:n.updatedAt||now()});
     }
@@ -97,7 +99,7 @@ export function normalizeImported(obj) {
       question:String(r.question||'').slice(0,10000),description:String(r.description||'').slice(0,20000),
       status:['em andamento','pausado','concluído'].includes(r.status)?r.status:'em andamento',archived:!!r.archived,
       tags:Array.isArray(r.tags)?r.tags.slice(0,20).map(t=>String(t).slice(0,50)):[],createdAt:r.createdAt||now(),updatedAt:r.updatedAt||now(),
-      completedAt:typeof r.completedAt==='string'?r.completedAt:null,sessions:Array.isArray(r.sessions)?r.sessions.slice(-1000).map(s=>({id:String(s.id||uid('session')),startedAt:String(s.startedAt||now()),endedAt:String(s.endedAt||s.startedAt||now()),activeMs:Math.max(0,Math.min(31536000000,Number(s.activeMs)||0)),focusMs:Object.fromEntries(Object.entries(s.focusMs||{}).slice(0,3000).filter(([k,v])=>typeof k==='string'&&Number.isFinite(Number(v))).map(([k,v])=>[k,Math.max(0,Math.min(31536000000,Number(v)))]))})):[],voices:voices.length?voices:defaultVoices(),nodes,edges});
+      completedAt:typeof r.completedAt==='string'?r.completedAt:null,closure:r.closure&&typeof r.closure==='object'&&['pausa','semresposta','provisoria','final'].includes(r.closure.kind)?{kind:r.closure.kind,note:String(r.closure.note||'').slice(0,5000),at:String(r.closure.at||now())}:null,closures:Array.isArray(r.closures)?r.closures.slice(-100).filter(c=>c&&['pausa','semresposta','provisoria','final'].includes(c.kind)).map(c=>({kind:c.kind,note:String(c.note||'').slice(0,5000),at:String(c.at||now())})):[],sessions:Array.isArray(r.sessions)?r.sessions.slice(-1000).map(s=>({id:String(s.id||uid('session')),startedAt:String(s.startedAt||now()),endedAt:String(s.endedAt||s.startedAt||now()),activeMs:Math.max(0,Math.min(31536000000,Number(s.activeMs)||0)),focusMs:Object.fromEntries(Object.entries(s.focusMs||{}).slice(0,3000).filter(([k,v])=>typeof k==='string'&&Number.isFinite(Number(v))).map(([k,v])=>[k,Math.max(0,Math.min(31536000000,Number(v)))]))})):[],voices:voices.length?voices:defaultVoices(),nodes,edges});
   }
   return reflections;
 }

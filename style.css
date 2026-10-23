@@ -156,3 +156,26 @@ button.primary,button.secondary,button.wide-primary,button.wide-secondary{border
  .path-navigator{max-width:calc(100% - 10px)}.path-navigator span{min-width:50px}
 }
 @media(max-width:370px){.reader-top-actions .secondary{font-size:10px;padding:8px 5px}.reader-top .eyebrow{letter-spacing:.07em}.reader-position{max-width:64px}}
+
+/* v0.4.0 — Apresentação, tutorial, versões e marcas de conversa */
+.version-control{border-color:var(--accent)!important;white-space:nowrap}
+.discussion-list{display:grid;gap:7px;margin:10px 0}
+.discussion-row{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;font-size:12px}
+.discussion-row b{display:block;margin-bottom:4px}.discussion-row small{color:var(--muted)}
+.discussion-row button{float:right}
+.discussion-flag{color:#f5cd8d;font-size:11px;margin:9px 0}
+.share-options{display:grid;gap:12px;margin:15px 0}.share-options label{display:flex;gap:10px;align-items:flex-start;font-size:12px;cursor:pointer}
+.share-options input{accent-color:var(--accent);flex-shrink:0;margin-top:2px}
+.share-preview{height:min(65dvh,620px);width:100%;border:1px solid var(--border);border-radius:12px;background:#0c1525}
+.private-warning{background:var(--surface2);border:1px solid #a17b51;border-radius:10px;padding:13px;font-size:12px;line-height:1.65}
+.suggested-row{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);margin:9px 0}
+.suggested-row input{flex-shrink:0;margin-top:5px}.suggested-row p{white-space:pre-wrap;font-size:12px}.suggested-row small{color:var(--muted)}
+.version-log{display:grid;gap:12px}.version-entry{border:1px solid var(--border);border-radius:13px;padding:14px;background:var(--surface2)}
+.version-entry h3{font-size:14px;margin:0 0 6px}.version-entry time{color:var(--muted);font-size:11px}.version-entry li{font-size:12px;margin:6px 0;line-height:1.6}
+.tour-card{position:fixed;z-index:125;right:clamp(10px,3vw,30px);bottom:clamp(10px,3vh,30px);width:min(92vw,385px);padding:21px;background:var(--surface);box-shadow:0 20px 65px #0009;border:2px solid var(--accent);border-radius:17px;color:var(--text)}
+.tour-card h2{font-size:19px;margin:8px 0}.tour-card p{font-size:13px;line-height:1.7;color:var(--muted)}
+.tour-card .tour-actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:15px}.tour-card .tour-actions button{font-size:12px}
+.tour-focus{position:relative!important;z-index:85!important;outline:3px solid #f7d18c!important;outline-offset:4px!important;box-shadow:0 0 0 6px #f7d18c30!important}
+.tour-count{font-size:11px;color:var(--accent);font-weight:800}
+@media(max-width:800px){.workspace-status #shareBtn{font-size:10px;padding:8px 6px} .top-actions{gap:4px}.top-actions #globalTour{padding:8px 6px}.top-actions #globalVersion{font-size:10px;padding:8px 7px}}
+@media(max-width:430px){.top-actions #globalTour{display:inline-flex!important;font-size:10px}.top-actions #globalVersion{display:inline-flex!important;font-size:10px}.hero-actions{flex-wrap:wrap}.hero-actions #tourLibrary{flex-basis:100%}.tour-card{left:9px;right:9px;bottom:9px;width:auto}}

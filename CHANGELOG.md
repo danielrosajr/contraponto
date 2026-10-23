@@ -1,42 +1,38 @@
-# Histórico de versões
+# Histórico de versões — CONTRAPONTO
 
-## v0.3.1 — Leitura Guiada (2026-10-22)
+## [0.4.0] — Apresentação Guiada (23/10/2026)
 
-- `feat`: Modo Leitura quase em tela cheia, com pensamento integral, notas, metadados e controles de navegação independentes do arraste.
-- `feat`: abrir leitor por duplo clique no bloco, barra de ferramentas, navegação flutuante ou inspetor.
-- `feat`: avanço/retorno por setas ← e →, escolha explícita de ramificações (inclusive teclas 1–9) e fechamento com Esc.
-- `fix`: foco de teclado no mapa do PC ao selecionar pensamento; inputs ocultos da biblioteca não impedem os atalhos.
-- `fix`: botão de anterior/próximo separado do sistema de arraste e validação por cliques reais em Chromium.
-- `compat`: mantém schemaVersion 3 e backups anteriores; cache offline atualizado para `contraponto-0.3.1`.
-- `test`: 35 testes automatizados aprovados, mais smoke tests de UI desktop/celular usando armazenamento simulado.
+### Novidades
+- **Exportação HTML independente (offline):** História guiada responsiva, seleção de ramificações, mapa clicável, resumo, índice cronológico e impressão/salvamento como PDF pelo navegador. Sem API, CDN, servidor ou rastreamento. Prévia isolada antes do download.
+- **Controle de compartilhamento:** nomes de vozes podem ser substituídos por perspectivas numeradas; notas/contexto privado e marcações de possíveis falácias ficam fora do HTML por padrão. O conteúdo dos blocos NÃO é anonimizado automaticamente — exige revisão manual.
+- **Pontos para conversar:** cinco motivos para marcar blocos, com notas opcionais; visíveis no inspetor, Modo Leitura, Markdown, resumo para sessão e apresentação.
+- **Resumo para sessão:** arquivo Markdown construído a partir de trechos efetivamente escritos e marcados, sem inventar interpretação ou diagnóstico; novo prompt voltado a relato para uma IA externa.
+- **Prompt de análise técnica revisto:** pede análise das diferentes vozes com IDs, premissas, objeções, falácias marcadas, evolução, mudanças de assunto e interpretações alternativas. Distingue explícito / inferido / hipotético.
+- **Importação de sugestões da IA:** cole um objeto JSON `suggestions` com `sourceId`, `type`, `relation` e `text`. Prévia, seleção manual, criação de novos blocos e desfazer em lote. Não envia dados à IA.
+- **Encerramento justificado:** pausa, sem resposta, conclusão provisória e conclusão final, com observação opcional e registro histórico separado do status da reflexão.
+- **Tutorial guiado:** oito passos sobre a biblioteca, mapa, leitor, criação, compartilhamento, encerramento e novidades; pode ser reiniciado.
+- **Controle de versão:** badge v0.4.0 no topo abre changelog legível com histórico de todas as versões; indicador de novidade após a atualização.
+- **Persistência:** schemaVersion 4 normaliza novos campos sem destruir dados das versões antigas. Cache offline passa para `contraponto-0.4.0`.
 
+### Observações
+- O HTML contém os dados que você decidir exportar. Um arquivo repassado pode ser lido por qualquer pessoa que o tenha; não existe expiração ou revogação.
+- PDF é obtido pelo botão **Imprimir/PDF** no HTML. Não existe biblioteca nativa de criação de PDF nem garantia de abertura de HTML em anexos de todos os aplicativos de celular.
+- A IA não é executada no aplicativo. Análises e sugestões dependem de copiar conteúdo voluntariamente para um serviço externo.
 
-## v0.3.0 — Fio do Raciocínio (2026-10-22)
+## [0.3.1] — Leitura Guiada
+- Modo leitura ampliado, navegação por setas, escolha de ramificações e duplo clique para ler.
 
-- `feat`: navegação por conexões com setas ←/→ e botões de toque; escolha explícita nas bifurcações.
-- `feat`: retomada guiada a partir da pausa, recapitulação das vozes e destaque temporário do caminho percorrido.
-- `feat`: registro local de sessões com horários e tempo ativo estimado, limite de 5 minutos sem interação e interrupção quando o app fica oculto.
-- `feat`: varredura de possíveis pausas por intervalo ≥ 1h entre blocos ligados; inserção confirmada, reversível e explicitamente marcada como sugestão retrospectiva.
-- `feat`: marcação manual de falácias nos blocos, com status e justificativa.
-- `feat`: relatório final/parcial com contagem de tipos, vozes, conexões, tempo, sessões, pausas e distribuição aproximada por cenário.
-- `feat`: prompt de xadrez para copiar ou salvar, com restrições de PGN e apresentação simbólica de lances.
-- `fix`: apresentação do dicionário — definição e exemplo completos para cada termo.
-- `fix`: evitar que o arraste do fundo capture clique no botão "Encerrar destaque".
-- `compat`: schemaVersion 3 com importação não destrutiva de reflexões antigas; cache offline `contraponto-0.3.0`.
-- `test`: 30 testes automatizados (10 adicionais) e smoke tests de interface com armazenamento simulado.
+## [0.3.0] — Fio do Raciocínio
+- Navegação por conexões, retomada, tempos e sessões, pausas retrospectivas, falácias, relatório e prompt de xadrez.
 
-## v0.2.2 — Feedback de Classificação
+## [0.2.2] — Feedback de Classificação
+- Resumo de alterações e toast após aplicar sugestões a todos os blocos.
 
-- Janela-resumo e toast após classificação em lote, mostrando analisados, alterados e mantidos.
+## [0.2.1] — Revisão em Lote
+- Modal responsivo, menus em ordem alfabética e revisão coletiva de classificações.
 
-## v0.2.1 — Revisão em Lote
+## [0.2.0] — Pensamento Livre
+- Minidicionário, classificação assistida local, comentários, pausas e notas laterais.
 
-- Modal adaptado a telas menores; seleção e revisão individual de classificações em lote; menus alfabéticos.
-
-## v0.2.0 — Pensamento Livre
-
-- Assistente local de classificação, minidicionário, comentários, metacomentários, pausas, notas laterais e concordâncias provisórias.
-
-## v0.1.0 — Primeiro Pensamento
-
-- Mapa visual, editor de nós/conexões, múltiplas vozes, histórico, exportação e armazenamento local.
+## [0.1.0] — Primeiro Pensamento
+- Biblioteca, editor visual, vozes, provocações, exportações, IndexedDB e PWA.

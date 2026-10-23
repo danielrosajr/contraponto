@@ -9,12 +9,16 @@ import {FALLACIES,FALLACY_STATUSES} from './fallacies.js';
 import {metricsFor,reportMarkdown} from './metrics.js';
 import {chessPromptFor} from './chess.js';
 import {readingStep} from './reading.js';
+import {makePresentationHTML} from './presentation.js';
+import {analysisPrompt,discussionSummary,parseNextSteps,DISCUSSION_TAGS,END_REASONS} from './analysis.js';
+import {APP_VERSION,RELEASES,TOUR_STEPS} from './release.js';
 
 const $=id=>document.getElementById(id);
 let app, activeId=null, selectedId=null, view='map', pan={x:100,y:100},zoom=1, visible=new Set(), showMainline=true;
 let undo=[],redo=[],saveTimer=null,toastTimer=null,modalCleanup=null,miniExtent=null,edgeFocusId=null;
 let journeyNodes=new Set(),journeyEdges=new Set(),journeyTimer=null,tracker=null,trackingTimer=null,navHistory=[];
 let readingMode=false,readerOptions=[],readerDirection=null;
+let tutorialStep=-1,tutorialOrigin=null,tutorialHighlight=null;
 const IDLE_MS=5*60000;
 const isMobile=()=>innerWidth<=800;
 const reflect=()=>app.reflections.find(r=>r.id===activeId);
@@ -185,6 +189,8 @@ function renderInspector(){const r=reflect(),n=node(selectedId);if(!r||!n)return
  <div class="inspector-footer"><button type="button" class="primary small" data-inspector="read">▣ Ler ampliado</button><button class="secondary small" data-inspector="edit">✎ Editar bloco</button><button class="secondary small" data-inspector="connect">⤳ Conectar</button><button class="secondary small" data-inspector="collapse">${n.collapsed?'▸ Expandir':'▾ Recolher'}</button></div>
  ${n.type==='pausa'?`<div class="resume-hint"><b>Ponto de retomada</b><p>Este bloco registra onde a conversa parou.</p><button class="secondary small" data-inspector="resumeFrom">↗ Retomar com resumo</button></div>`:''}
  <p class="small-note">Criado: ${safeText(niceDate(n.createdAt))} · Editado: ${safeText(niceDate(n.updatedAt))}</p>
+ <div class="section-title">★ PONTOS PARA CONVERSAR (${(n.discussion||[]).length})</div><p class="small-note">Marque trechos que deseja discutir na sessão. Nenhum destaque é enviado automaticamente.</p>
+ <div class="discussion-list">${(n.discussion||[]).map(d=>`<div class="discussion-row"><button type="button" class="secondary small" data-remove-discussion="${safeText(d.id)}">Remover</button><b>${safeText(DISCUSSION_TAGS[d.key]||d.label||d.key)}</b>${d.note?`<small>${safeText(d.note)}</small>`:''}</div>`).join('')||'<p class="small-note">Nenhum marcador ainda.</p>'}</div><button class="secondary small" data-inspector="discussion">★ Marcar para conversar</button>
  <div class="section-title">POSSÍVEIS FALÁCIAS (${(n.fallacies||[]).length})</div>
  <p class="small-note">Marcadas por você, não verificadas automaticamente. Um rótulo não prova um erro.</p>
  <div class="fallacy-list">${(n.fallacies||[]).map(f=>`<div class="fallacy-row"><b>⚑ ${safeText(FALLACIES[f.key]?.[0]||f.key)}</b><small>${safeText(FALLACY_STATUSES[f.status]||f.status)}</small><p>${safeText(f.note)}</p><button type="button" class="secondary small" data-edit-fallacy="${safeText(f.id)}">Revisar</button></div>`).join('')||'<span class="small-note">Nenhuma falácia marcada.</span>'}</div>
@@ -236,6 +242,7 @@ function renderReader(){
   <div class="reader-text">${safeText(n.content||'Este bloco não possui conteúdo.')}</div>
   ${n.notes?`<div class="reader-note"><b>Contexto</b><p>${safeText(n.notes)}</p></div>`:''}
   ${(n.annotations||[]).length?`<div class="reader-note"><b>Notas laterais</b>${n.annotations.map(a=>`<p>${safeText(a.text)}</p>`).join('')}</div>`:''}
+  ${(n.discussion||[]).length?`<div class="reader-note"><b>★ Para conversar</b>${n.discussion.map(d=>`<p>${safeText(DISCUSSION_TAGS[d.key]||d.label||d.key)}${d.note?': '+safeText(d.note):''}</p>`).join('')}</div>`:''}
   <div class="reader-meta-footer"><span>${safeText(CLASSES[n.classification]||'Não classificado')}</span><span>${safeText(niceDate(n.createdAt))}</span>${n.fallacies?.length?`<span>⚑ ${n.fallacies.length} possível(is) falácia(s) anotada(s)</span>`:''}</div>`;
  $('readerBack').disabled=!prev.length;
  $('readerNext').disabled=!next.length;
@@ -294,6 +301,7 @@ function showReport(){const r=reflect();if(!r)return;trackTick();const m=metrics
  <div class="report-time"><b>◷ Tempo ativo estimado: ${formatDuration(m.totalMs)}</b><p>Intervalo de calendário: ${formatDuration(m.calendarMs)} (inclui períodos fora do aplicativo).</p><p class="small-note">A contagem ativa para quando o app fica oculto ou após 5 minutos sem interação. Não mede seus pensamentos fora da tela nem determina quanto você levou para formular cada argumento.</p></div>
  <div class="report-columns"><section><h3>Tipos de pensamento</h3>${list(m.byType)}</section><section><h3>Vozes</h3>${list(m.byVoice)}</section><section><h3>Relações</h3>${list(m.byRelation)}</section><section><h3>Marcações de falácias</h3>${list(m.fallaciesByStatus)}</section></div>
  <h3>Registro de sessões</h3><div class="session-ledger">${(r.sessions||[]).slice(-25).map((ss,i)=>`<div class="stat-line"><span>Sessão ${(r.sessions||[]).length-Math.min(25,(r.sessions||[]).length)+i+1} · ${safeText(niceDate(ss.startedAt))} → ${safeText(niceDate(ss.endedAt))}</span><b>${formatDuration(ss.activeMs)}</b></div>`).join('')||'<p class="small-note">Nenhuma sessão registrada nesta versão.</p>'}</div><p class="small-note">Até 25 sessões mais recentes nesta visualização; o relatório exportado inclui todas as sessões preservadas.</p>
+ <h3>Encerramento mais recente</h3><p>${safeText(r.closure?`${END_REASONS[r.closure.kind]||r.closure.kind} · ${niceDate(r.closure.at)}${r.closure.note?' — '+r.closure.note:''}`:'Nenhum motivo de encerramento registrado.')}</p>
  <h3>Pausas registradas</h3><div class="session-ledger">${r.nodes.filter(n=>n.type==='pausa').sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt))).slice(-20).map(n=>`<div class="stat-line"><span>${safeText(n.title||'Pausa')} · ${safeText(niceDate(n.createdAt))}</span><b>${n.suggestedGap?'Sugerida':'Registrada'}</b></div>`).join('')||'<span class="small-note">Nenhuma pausa marcada.</span>'}</div>
  <h3>Tempo por cenário (estimativa de atenção)</h3><p class="small-note">Distribuído pelo cenário associado ao bloco selecionado enquanto o app estava ativo; não mede todo o tempo gasto pensando em cada cenário e não garante exclusividade entre caminhos.</p>
  <div class="report-scenarios">${m.branches.map(b=>`<div class="stat-line"><span>${safeText(b.title)}</span><b>${formatDuration(b.activeMs)}</b></div>`).join('')||'<span class="small-note">Sem ramificações.</span>'}<div class="stat-line"><span>Sem cenário identificado</span><b>${formatDuration(m.unassignedMs)}</b></div></div>
@@ -302,8 +310,12 @@ function showReport(){const r=reflect();if(!r)return;trackTick();const m=metrics
  el.querySelector('#copyChessReport').onclick=()=>navigator.clipboard.writeText(chessPromptFor(r)).then(()=>toast('Prompt de xadrez copiado.')).catch(()=>{toast('Não foi possível acessar a área de transferência. Use Exportar → Prompt de xadrez.');});
  },{wide:true});
 }
-function finishReflection(){const r=reflect();if(!r)return;if(!confirm('Marcar este debate como concluído? Você poderá reabri-lo depois; o relatório ficará disponível.'))return;
- stopTracking();mutation(()=>{r.status='concluído';r.completedAt=now();});showReport();toast('Debate concluído. Relatório atualizado.');
+function finishReflection(){const r=reflect();if(!r)return;
+ openModal('Encerrar a sessão de reflexão',`<p class="small-note">Nem todo encerramento significa uma resposta definitiva. Registre o motivo sem apagar o histórico.</p><form id="closureForm">${selectField('reason','Como você terminou este debate?',Object.entries(END_REASONS),'provisoria')}${field('note','O que ficou pendente ou o que você concluiu? (opcional)','', 'textarea',false,'maxlength="5000" rows="4"')}<div class="modal-actions"><button class="secondary" data-close-modal type="button">Cancelar</button><button class="primary" type="submit">Registrar e ver relatório</button></div></form>`,el=>{
+ el.querySelector('#closureForm').onsubmit=e=>{e.preventDefault();const form=new FormData(e.currentTarget),kind=form.get('reason');if(!END_REASONS[kind])return;stopTracking();mutation(()=>{
+  const closure={kind,note:String(form.get('note')||'').trim(),at:now()};r.closure=closure;r.closures||=[];r.closures.push(closure);r.status=kind==='pausa'?'pausado':'concluído';r.completedAt=kind==='pausa'?null:closure.at;
+ });closeModal();showReport();toast(kind==='pausa'?'Pausa registrada.':'Encerramento registrado com motivo.');};
+ });
 }
 function copyChessPrompt(){const r=reflect();if(!r)return;const text=chessPromptFor(r);openModal('♟ Prompt de xadrez',`<p class="small-note">Metáfora narrativa; não é uma partida real nem valida automaticamente os argumentos. Copie manualmente para uma IA de sua escolha.</p><textarea id="chessText" rows="12" readonly>${safeText(text)}</textarea><div class="modal-actions"><button class="secondary" id="downloadChessText">↓ Salvar .txt</button><button class="primary" id="copyChessText">Copiar prompt</button></div>`,el=>{
  el.querySelector('#copyChessText').onclick=()=>navigator.clipboard.writeText(text).then(()=>toast('Prompt de xadrez copiado.')).catch(()=>{el.querySelector('#chessText').select();toast('Selecione e copie o texto manualmente.');});
@@ -375,7 +387,7 @@ function openNodeEditor(existingId=null,config={}){const r=reflect();if(!r)retur
  else {id=uid('node');const pos=nextPosition(parent);r.nodes.push({id,x:pos.x,y:pos.y,type:data.get('type'),voiceId:data.get('voiceId'),title:String(data.get('title')||'').trim(),content:thought,notes:String(data.get('notes')||'').trim(),annotations:[],classification:data.get('classification'),state:data.get('state'),collapsed:false,createdAt:ts,updatedAt:ts});
  if(parent)r.edges.push({id:uid('edge'),source:parent.id,target:id,relation:data.get('relation')||config.relation||'continua',createdAt:ts});
  if(config.returnToRoot&&r.nodes[0]?.id!==id)r.edges.push({id:uid('edge'),source:id,target:r.nodes[0].id,relation:'retorna',createdAt:ts});
- if(config.markPaused)r.status='pausado';}
+ if(config.markPaused){r.status='pausado';const closure={kind:'pausa',note:thought.slice(0,5000),at:ts};r.closure=closure;r.closures||=[];r.closures.push(closure);}}
  });
  closeModal();if(!existingId)clearJourneyHighlight();if(config.markPaused)stopTracking();focusNode(id);if(isMobile())$('inspector').classList.add('hidden');toast(existing?'Pensamento atualizado.':config.markPaused?'Pausa registrada. A reflexão foi marcada como pausada.':'Pensamento adicionado.');
  if(!existingId&&parent&&Date.parse(ts)-Date.parse(parent.createdAt)>=60*60000)toast('Possível pausa de mais de 1 hora neste caminho. Veja Organizar → Procurar pausas.',{duration:6500});
@@ -481,7 +493,7 @@ function voiceForm(id,done){const r=reflect(),v=id?voice(id):null;
  const name=data.get('name').trim();if(!name)return false;
  mutation(()=>{if(v){v.name=name;v.color=data.get('color');}else r.voices.push({id:uid('voice'),name,color:data.get('color')});});
  queueMicrotask(done);return true;});}
-function exportModal(){if(!reflect())return;const opts=[['md','☷','Texto estruturado (.md)','Argumentos, vozes, conexões e ordem cronológica'],['svg','◇','Mapa em SVG','Imagem vetorial do mapa inteiro, sem cortes'],['png','▧','Mapa em PNG','Imagem PNG com todos os blocos e conexões'],['json','{}','Backup completo (.json)','Dados, posições, vozes e configurações da biblioteca'],['ai','✦','Prompt para inteligência artificial','Copiar análise crítica incluindo falácias marcadas'],['chess','♟','Prompt de xadrez de argumentos','Copiar instruções para converter o debate em partida narrativa'],['report','◷','Relatório final ou parcial (.md)','Métricas, sessões, tipos e possíveis falácias']];
+function exportModal(){if(!reflect())return;const opts=[['md','☷','Texto estruturado (.md)','Argumentos, vozes, conexões e ordem cronológica'],['svg','◇','Mapa em SVG','Imagem vetorial do mapa inteiro, sem cortes'],['png','▧','Mapa em PNG','Imagem PNG com todos os blocos e conexões'],['json','{}','Backup completo (.json)','Dados, posições, vozes e configurações da biblioteca'],['ai','✦','Prompt crítico aprofundado','Análise rigorosa com IDs, valores, hipóteses, falácias e sugestões para novos blocos'],['therapyai','✧','Prompt para resumo de sessão','Solicita resumo acessível e cuidadoso a uma IA externa'],['therapy','♡','Resumo para levar à sessão (.md)','Resumo literal dos trechos sinalizados, emoções e perguntas abertas'],['share','♧','Apresentação interativa (.html)','Leitura por etapas, mapa, resumo, impressão/PDF e prévia privada'],['importai','↗','Importar sugestões da IA','Revise propostas do ChatGPT e adicione como novos blocos'],['chess','♟','Prompt de xadrez de argumentos','Copiar instruções para converter o debate em partida narrativa'],['report','◷','Relatório final ou parcial (.md)','Métricas, sessões, tipos e possíveis falácias']];
  openModal('Exportar reflexão',`<p class="small-note">Apenas quando você escolher exportar ou copiar haverá uma cópia dos dados fora do armazenamento local.</p>${opts.map(([a,ic,name,desc])=>`<button class="export-option" data-export="${a}"><span class="symbol">${ic}</span><span><b>${name}</b><small>${desc}</small></span></button>`).join('')}`,el=>el.querySelectorAll('[data-export]').forEach(b=>b.onclick=async()=>{
  const type=b.dataset.export,r=reflect();try{
  if(type==='md')downloadText(`${cleanFilename(r.title)}.md`,markdownFor(r),'text/markdown;charset=utf-8');
@@ -489,6 +501,11 @@ function exportModal(){if(!reflect())return;const opts=[['md','☷','Texto estru
  else if(type==='json')downloadText(`contraponto-backup-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(app,null,2),'application/json;charset=utf-8');
  else if(type==='ai'){await copyText(promptFor(r));toast('Prompt e raciocínio copiados. Cole onde desejar.');closeModal();return;}
  else if(type==='chess'){closeModal();copyChessPrompt();return;}
+ else if(type==='therapyai'){await copyText(analysisPrompt(r,{audience:'therapy'}));toast('Prompt para resumo de sessão copiado. Revise o conteúdo antes de enviar à IA.');closeModal();return;}
+ else if(type==='therapy')downloadText(`${cleanFilename(r.title)}-para-conversar.md`,discussionSummary(r),'text/markdown;charset=utf-8');
+ else if(type==='share'){closeModal();sharePresentation();return;}
+ else if(type==='importai'){closeModal();importAISuggestions();return;}
+
  else if(type==='report')downloadText(`${cleanFilename(r.title)}-relatorio.md`,reportMarkdown(r),'text/markdown;charset=utf-8');
  toast('Exportação iniciada.');closeModal();}catch(err){console.error(err);toast(err.message||'Não foi possível exportar.');}
  }));}
@@ -529,8 +546,58 @@ function wireGraph(){const viewport=$('graphViewport'),nodes=$('graphNodes'),edg
  $('miniMap').addEventListener('click',e=>{if(!miniExtent)return;const rect=$('miniMapSvg').getBoundingClientRect();const x=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width)),y=Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height));
  const worldX=miniExtent.left+x*(miniExtent.right-miniExtent.left),worldY=miniExtent.top+y*(miniExtent.bottom-miniExtent.top);const size=canvasSize();pan.x=size.width/2-worldX*zoom;pan.y=size.height/2-worldY*zoom;updateTransform();drawMini();});
 }
+// Exportações privadas: prévia isolada; nada é publicado no GitHub Pages nem enviado a um servidor.
+function sharePresentation(){const r=reflect();if(!r)return;
+ openModal('♧ Apresentação guiada para compartilhar',`<p class="small-note">Crie um documento HTML autônomo e somente leitura. A pessoa poderá acompanhar as falas, escolher ramificações, consultar o mapa e imprimir/salvar como PDF pelo navegador.</p>
+ <div class="private-warning"><b>Privacidade:</b> este HTML contém o conteúdo escolhido da reflexão. Qualquer pessoa com acesso ao arquivo poderá lê-lo. Ocultar nomes de vozes NÃO remove informações pessoais escritas dentro dos blocos. Revise antes de enviar; não publique no GitHub ou em links públicos.</div>
+ <div class="share-options"><label><input type="checkbox" id="shareAnon"/> Substituir nomes das vozes por “Perspectiva 1, 2...” (não anonimiza o conteúdo)</label><label><input type="checkbox" id="shareNotes"/> Incluir anotações privadas e contexto adicional (desmarcado por segurança)</label><label><input type="checkbox" id="shareFallacies"/> Incluir marcações de possíveis falácias (desmarcado por segurança)</label></div>
+ <div class="modal-actions"><button class="secondary" id="previewShared">▣ Pré-visualizar</button><button class="secondary" id="downloadSummaryTherapy">↓ Resumo para sessão</button><button class="primary" id="downloadShared">↓ Baixar HTML</button></div><div id="presentationPreview"></div>`,el=>{
+ const options=()=>({anonymizeVoices:el.querySelector('#shareAnon').checked,includeNotes:el.querySelector('#shareNotes').checked,includeFallacies:el.querySelector('#shareFallacies').checked});
+ el.querySelector('#downloadShared').onclick=()=>{downloadText(`${cleanFilename(r.title)}-apresentacao.html`,makePresentationHTML(r,options()),'text/html;charset=utf-8');toast('HTML baixado. Confira o conteúdo antes de enviar.');};
+ el.querySelector('#downloadSummaryTherapy').onclick=()=>downloadText(`${cleanFilename(r.title)}-para-conversar.md`,discussionSummary(r),'text/markdown;charset=utf-8');
+ el.querySelector('#previewShared').onclick=()=>{const host=el.querySelector('#presentationPreview');host.replaceChildren();const iframe=document.createElement('iframe');iframe.className='share-preview';iframe.title='Prévia da apresentação privada';iframe.setAttribute('sandbox','allow-scripts allow-modals');iframe.srcdoc=makePresentationHTML(r,options());host.append(iframe);iframe.scrollIntoView({behavior:'smooth',block:'nearest'});};
+ },{wide:true});
+}
+function markForDiscussion(){const n=node(selectedId);if(!n)return;
+ openModal('★ Marcar para conversar',`<p class="small-note">Este marcador identifica um trecho que você quer discutir com alguém. Não é uma avaliação psicológica ou classificação automática.</p><form id="discussionForm">${selectField('key','Por que destacar este pensamento?',Object.entries(DISCUSSION_TAGS),'conversar')}${field('note','Minha observação (opcional)','', 'textarea',false,'maxlength="1500" rows="3"')}<div class="modal-actions"><button type="button" class="secondary" data-close-modal>Cancelar</button><button type="submit" class="primary">★ Adicionar marcador</button></div></form>`,el=>{
+ el.querySelector('#discussionForm').onsubmit=e=>{e.preventDefault();const data=new FormData(e.currentTarget),key=data.get('key');if(!DISCUSSION_TAGS[key])return;mutation(()=>{n.discussion||=[];n.discussion.push({id:uid('mark'),key,label:DISCUSSION_TAGS[key],note:String(data.get('note')||'').trim(),createdAt:now()});n.updatedAt=now();});closeModal();toast('Trecho marcado para conversar.');};
+ });
+}
+function removeDiscussionMark(id){const n=node(selectedId);if(!n||!n.discussion?.some(d=>d.id===id))return;
+ mutation(()=>{n.discussion=n.discussion.filter(d=>d.id!==id);n.updatedAt=now();});toast('Marcador removido; o pensamento continua no mapa.');
+}
+function importAISuggestions(){const r=reflect();if(!r)return;
+ openModal('↗ Importar propostas de novos pensamentos',`<p class="small-note">Cole o bloco JSON “suggestions” da análise feita por uma IA. Ele será analisado localmente. <b>Nada muda até você revisar e confirmar</b>. O texto enviado à IA é responsabilidade sua; evite dados que não deseja compartilhar.</p>${field('suggestions','Cole o JSON com as sugestões','','textarea',true,'rows="9" placeholder="{&quot;suggestions&quot;:[...]}"')}<div class="modal-actions"><button class="secondary" data-close-modal>Cancelar</button><button class="primary" id="reviewSuggestions">Revisar sugestões</button></div>`,el=>{
+ el.querySelector('#reviewSuggestions').onclick=()=>{let parsed;try{parsed=parseNextSteps(el.querySelector('textarea').value,r);}catch(err){toast(err.message);return;}
+ if(!parsed.suggestions.length)return toast(`${parsed.rejected} sugestão(ões) não aproveitadas. Verifique IDs, tipos e relações.`);
+ openModal('Revisar novos blocos propostos',`<p class="small-note">${parsed.suggestions.length} sugestões compatíveis · ${parsed.rejected} inválida(s). As propostas são ideias de outra IA, não fatos comprovados. Escolha o que deseja adicionar. Os blocos originais não serão alterados.</p>
+ <div class="modal-scroll">${parsed.suggestions.map(s=>`<label class="suggested-row"><input type="checkbox" data-suggest="${s.index}" checked/><span><b>${safeText(TYPES[s.type][0])}</b> · ${safeText(RELATIONS[s.relation])}<p>${safeText(s.text)}</p><small>Conectado a: ${safeText(labelOf(r.nodes.find(n=>n.id===s.sourceId)))}</small></span></label>`).join('')}</div><div class="modal-actions"><button class="secondary" data-close-modal>Cancelar</button><button class="primary" id="acceptSuggestions">Adicionar selecionados</button></div>`,panel=>{
+ panel.querySelector('#acceptSuggestions').onclick=()=>{const chosen=new Set([...panel.querySelectorAll('[data-suggest]:checked')].map(x=>Number(x.dataset.suggest)));const accepted=parsed.suggestions.filter(s=>chosen.has(s.index));if(!accepted.length)return toast('Nenhum bloco selecionado.');
+ mutation(()=>{for(const s of accepted){const parent=r.nodes.find(n=>n.id===s.sourceId);if(!parent)continue;const pos=nextPosition(parent);const ts=now(),id=uid('node');r.nodes.push({id,x:pos.x,y:pos.y,type:s.type,title:'',content:s.text,notes:'Proposta externa de IA aceita manualmente; não é um fato validado.',voiceId:r.voices.find(v=>v.id==='observador')?.id||r.voices[0].id,classification:'',state:'ativo',annotations:[],discussion:[],fallacies:[],collapsed:false,createdAt:ts,updatedAt:ts});r.edges.push({id:uid('edge'),source:parent.id,target:id,relation:s.relation,createdAt:ts});}});closeModal();toast(`${accepted.length} sugestão(ões) adicionada(s). Use Ctrl+Z para desfazer o lote.`,{duration:5500});};
+ },{wide:true});
+ };
+ },{wide:true});
+}
+function showVersions(){const content=RELEASES.map(rel=>`<section class="version-entry"><h3>${safeText(rel.version)} — ${safeText(rel.name)}</h3>${rel.date?`<time>${safeText(rel.date)}</time>`:''}<ul>${rel.items.map(t=>`<li>${safeText(t)}</li>`).join('')}</ul></section>`).join('');
+ openModal('Novidades · CONTRAPONTO v'+APP_VERSION,`<p class="small-note">Versão instalada: <b>${APP_VERSION}</b>. Todas as atualizações abaixo ficam disponíveis mesmo sem internet após o app estar instalado em cache.</p><div class="version-log">${content}</div><div class="modal-actions"><button class="secondary" id="restartTour">▶ Iniciar tutorial</button><button class="primary" data-close-modal>Entendi</button></div>`,el=>{el.querySelector('#restartTour').onclick=()=>{closeModal();startTutorial();};},{wide:true});
+ app.settings.lastSeenVersion=APP_VERSION;persist();
+}
+function tourClearFocus(){if(tutorialHighlight){tutorialHighlight.classList.remove('tour-focus');tutorialHighlight=null;}}
+function tourStop(complete=false){tourClearFocus();tutorialStep=-1;$('tourCard').classList.add('hidden');if(complete){app.settings.tutorialCompleted=true;persist();toast('Tutorial concluído! Você pode reabri-lo quando quiser.');}}
+function startTutorial(){closeReader(false);closeModal();tourStop(false);tutorialOrigin=activeId;tutorialStep=activeId?2:0;tourRender();}
+function tourRender(){if(tutorialStep<0)return;const step=TOUR_STEPS[tutorialStep];if(!step)return tourStop(true);
+ tourClearFocus();if(step.location==='workspace'&&!activeId){const demo=app.reflections.find(r=>r.tags.includes('demonstração'));if(demo)openReflection(demo.id);else{const r=makeDemo();app.reflections.unshift(r);persist();openReflection(r.id);}}
+ if(step.location==='library'&&activeId)goHome();
+ if(isMobile()&&step.selector==='#graphViewport')$('sidebar').classList.add('mobile-hidden');
+ const target=document.querySelector(step.selector);if(target){tutorialHighlight=target;target.classList.add('tour-focus');target.scrollIntoView({block:'nearest',behavior:'smooth'});}
+ $('tourCard').classList.remove('hidden');$('tourCard').innerHTML=`<div class="tour-count">PASSO ${tutorialStep+1} DE ${TOUR_STEPS.length} · GUIA INTERATIVO</div><h2>${safeText(step.title)}</h2><p>${safeText(step.description)}</p><div class="tour-actions"><button class="secondary" id="skipTour">Pular</button><button class="secondary" id="tourPrev" ${tutorialStep===0?'disabled':''}>← Voltar</button><button class="primary" id="tourNext">${tutorialStep===TOUR_STEPS.length-1?'Concluir ✓':'Próximo →'}</button></div>`;
+ $('skipTour').onclick=()=>tourStop();$('tourPrev').onclick=()=>{tutorialStep--;tourRender();};$('tourNext').onclick=()=>{tutorialStep++;tourRender();};
+}
 function wireEvents(){
  $('brandBtn').onclick=goHome;$('backHome').onclick=goHome;$('themeBtn').onclick=()=>{app.settings.theme=app.settings.theme==='dark'?'light':'dark';applyTheme();persist();};
+ $('globalTour').onclick=startTutorial;$('tourLibrary').onclick=startTutorial;$('tourSidebar').onclick=startTutorial;
+ $('globalVersion').onclick=showVersions;
+ $('shareBtn').onclick=sharePresentation;$('shareSidebar').onclick=sharePresentation;$('analysisImportSidebar').onclick=importAISuggestions;
  $('globalImport').onclick=importJson;$('globalGlossary').onclick=glossaryModal;$('glossarySidebar').onclick=glossaryModal;
  $('pauseSession').onclick=pauseReflection;$('resumeSession').onclick=()=>resumeReflection();
  $('reportBtn').onclick=showReport;$('reportSidebar').onclick=showReport;$('historyReport').onclick=showReport;
@@ -563,10 +630,10 @@ function wireEvents(){
  $('layoutBtn').onclick=autoLayout;$('batchClassifyBtn').onclick=batchClassify;$('zoomIn').onclick=()=>setZoom(zoom*1.2);$('zoomOut').onclick=()=>setZoom(zoom/1.2);
  $('connectToolbar').onclick=()=>connectModal();$('emphasisToggle').onchange=e=>{showMainline=e.target.checked;renderEdges();};
  $('undoBtn').onclick=undoAction;$('redoBtn').onclick=redoAction;
- $('inspectorContent').onclick=e=>{const noteId=e.target.closest('[data-remove-note]')?.dataset.removeNote;if(noteId)return removeMarginNote(noteId);const fallacyId=e.target.closest('[data-edit-fallacy]')?.dataset.editFallacy;if(fallacyId)return markFallacy(fallacyId);const q=e.target.closest('[data-quick]')?.dataset.quick;if(q)return quick(q);
+ $('inspectorContent').onclick=e=>{const noteId=e.target.closest('[data-remove-note]')?.dataset.removeNote;if(noteId)return removeMarginNote(noteId);const discussionId=e.target.closest('[data-remove-discussion]')?.dataset.removeDiscussion;if(discussionId)return removeDiscussionMark(discussionId);const fallacyId=e.target.closest('[data-edit-fallacy]')?.dataset.editFallacy;if(fallacyId)return markFallacy(fallacyId);const q=e.target.closest('[data-quick]')?.dataset.quick;if(q)return quick(q);
  const action=e.target.closest('[data-inspector]')?.dataset.inspector;if(action==='read')showReader(selectedId);if(action==='edit')openNodeEditor(selectedId);if(action==='connect')connectModal();
  if(action==='challenge')challenge();if(action==='collapse')toggleCollapse(selectedId);if(action==='delete')removeNode();
- if(action==='addNote')addMarginNote();if(action==='addFallacy')markFallacy();if(action==='dictionary')glossaryModal();if(action==='resumeFrom')resumeReflection(selectedId);};
+ if(action==='discussion')markForDiscussion();if(action==='addNote')addMarginNote();if(action==='addFallacy')markFallacy();if(action==='dictionary')glossaryModal();if(action==='resumeFrom')resumeReflection(selectedId);};
  $('closeInspector').onclick=()=>{selectedId=null;renderWorkspace();};
  $('historyList').onclick=e=>{const jump=e.target.closest('[data-jump]')?.dataset.jump;if(jump)focusNode(jump);};
  $('closeModal').onclick=closeModal;$('modal').onclick=e=>{if(e.target===$('modal')||e.target.closest('[data-close-modal]'))closeModal();};
@@ -599,9 +666,9 @@ function wireEvents(){
  wireGraph();
 }
 function applyTheme(){document.body.dataset.theme=app.settings.theme==='light'?'light':'dark';document.querySelector('meta[name="theme-color"]').content=app.settings.theme==='light'?'#f1f4fa':'#0b1220';}
-async function boot(){try{app=await readApp();if(!app) {app=initialData();await writeApp(app);}if(!Array.isArray(app.reflections))throw Error('Dados locais inválidos.');app.settings||={theme:'dark'};app.reflections=normalizeImported({reflections:app.reflections});app.schemaVersion=3;}
+async function boot(){try{app=await readApp();if(!app) {app=initialData();await writeApp(app);}if(!Array.isArray(app.reflections))throw Error('Dados locais inválidos.');app.settings||={theme:'dark'};app.reflections=normalizeImported({reflections:app.reflections});app.schemaVersion=4;}
  catch(e){console.error('Erro ao carregar',e);if(confirm('Não foi possível ler os dados locais. Deseja abrir com uma biblioteca temporária? Não será apagado nenhum backup externo.'))app=initialData();else {document.body.innerHTML='<main style="font:16px sans-serif;padding:32px">Não foi possível acessar o armazenamento local. Habilite IndexedDB no navegador e recarregue.</main>';return;}}
- applyTheme();wireEvents();renderLibrary();
+ applyTheme();wireEvents();renderLibrary();if(app.settings.lastSeenVersion!==APP_VERSION){toast(`CONTRAPONTO v${APP_VERSION}: nova apresentação guiada, tutorial e análise. Veja Novidades da versão.`,{duration:7000});}
  if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('Offline indisponível:',err));
 }
 boot();

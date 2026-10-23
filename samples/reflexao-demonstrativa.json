@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "reflections": [
     {
-      "id": "reflection_7a8682b4-5dee-42b6-abd0-fcbf423c496c",
+      "id": "reflection_b392ac64-b881-4853-a6c0-da8f4d30246e",
       "title": "O que significa ser afetado pelo desconhecido?",
       "question": "O que significa dizer que algo não me afeta se eu desconheço sua existência?",
       "description": "Reflexão fictícia demonstrativa. Explore caminhos, objeções, cenários e um retorno à pergunta original.",
@@ -12,8 +12,12 @@
         "demonstração",
         "filosofia"
       ],
-      "createdAt": "2026-10-22T22:54:19.259Z",
-      "updatedAt": "2026-10-22T22:54:19.259Z",
+      "createdAt": "2026-10-23T03:54:39.420Z",
+      "updatedAt": "2026-10-23T03:54:39.420Z",
+      "completedAt": null,
+      "closure": null,
+      "closures": [],
+      "sessions": [],
       "voices": [
         {
           "id": "eu1",
@@ -33,7 +37,7 @@
       ],
       "nodes": [
         {
-          "id": "node_8d3733ac-83e9-47c9-bea2-7eae4c9d9667",
+          "id": "node_c2d8796f-d8c7-4a48-83f3-7fceeda0c425",
           "type": "pergunta",
           "title": "Pergunta principal",
           "content": "O que significa dizer que algo não me afeta se eu desconheço sua existência?",
@@ -44,12 +48,11 @@
           "x": 0,
           "y": 0,
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.259Z",
-          "updatedAt": "2026-10-22T22:54:19.259Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.420Z",
+          "updatedAt": "2026-10-23T03:54:39.420Z"
         },
         {
-          "id": "node_f6e4cf08-6c1c-49eb-bef5-dae37ee83824",
+          "id": "node_8005028b-3866-4c1f-8127-ef26de8cde66",
           "type": "premissa",
           "title": "Sofrimento consciente",
           "content": "Se desconheço um acontecimento, não posso sofrer conscientemente por ele naquele instante.",
@@ -60,12 +63,11 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "node_596174df-7c90-4c64-ba4e-4066d27b6927",
+          "id": "node_bd0de695-c2dc-4aed-b136-2385c187311a",
           "type": "objecao",
           "title": "E as consequências?",
           "content": "Não perceber algo elimina as consequências que isso pode produzir na minha vida?",
@@ -76,12 +78,20 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z",
+          "discussion": [
+            {
+              "id": "mark_4e564b38-be17-4dae-a2da-aaecd3454e90",
+              "key": "conversar",
+              "label": "Quero conversar sobre isso",
+              "note": "Como diferenciar sofrimento emocional e consequências?",
+              "createdAt": "2026-10-23T03:54:39.422Z"
+            }
+          ]
         },
         {
-          "id": "node_67440740-c1bf-445c-a09b-df5d6bdbb91b",
+          "id": "node_21fd57c4-0288-41c8-9c13-10f036e37fce",
           "type": "contra",
           "title": "Duas dimensões",
           "content": "Ausência de sofrimento imediato não significa ausência de efeitos concretos.",
@@ -92,12 +102,11 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "node_bbb8c1f8-1897-40fd-964a-69ae8660cd77",
+          "id": "node_61219fe5-e126-4a79-b875-381b88156651",
           "type": "cenario",
           "title": "Cenário A",
           "content": "Uma pessoa esconde um fato sem alterar em nada minhas decisões ou meu cotidiano.",
@@ -108,12 +117,11 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "node_b5c353d8-ec81-4c3c-92c7-f819bd333471",
+          "id": "node_f840299a-9686-4147-a521-2a566d8408e1",
           "type": "cenario",
           "title": "Cenário B",
           "content": "Uma informação omitida me impede de fazer escolhas importantes.",
@@ -124,12 +132,11 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "node_a61ce614-52a2-41c4-8a12-6935a52d5c20",
+          "id": "node_b79b9703-3379-46db-88d9-acd204c880d0",
           "type": "pergunta",
           "title": "O que é ser afetado?",
           "content": "Estou falando de sentir algo, de perder autonomia ou de sofrer consequências?",
@@ -140,12 +147,11 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "node_406955e5-7d17-42c0-a3e4-23e703497a39",
+          "id": "node_0f3c411f-eead-4e32-8947-e24d033de770",
           "type": "valor",
           "title": "Autonomia",
           "content": "Valorizar a possibilidade de escolher com base em informações relevantes.",
@@ -156,12 +162,11 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "node_6f4336a4-dc29-41d8-aa0b-ee7567b8863f",
+          "id": "node_5f310749-3602-4450-8639-a6ca5a2d7c6e",
           "type": "retorno",
           "title": "Voltar ao centro",
           "content": "Agora volto à pergunta original, distinguindo o que sinto do que realmente acontece.",
@@ -172,12 +177,11 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "node_d382d759-9d67-4b67-92dd-c848082ec336",
+          "id": "node_e1aae75d-355b-446b-9fdc-052c2c616262",
           "type": "provisoria",
           "title": "Conclusão provisória",
           "content": "Não saber pode impedir sofrimento consciente imediato, mas não garante ausência de consequências, nem preserva necessariamente minha autonomia.",
@@ -188,12 +192,11 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "node_13ba57fc-fc3a-4fcf-bc6d-82f47001b9d7",
+          "id": "node_f3dd1954-e8b1-4c74-b9b2-1efcf626cb90",
           "type": "roteiro",
           "title": "Organizando o exercício",
           "content": "Quero comparar o que sinto, o que acontece e o que considero justo em cada cenário.",
@@ -204,12 +207,11 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "node_28b3f1f8-2fa5-4820-9528-134059c5dd26",
+          "id": "node_eb1fe7b4-7346-441e-be32-fa500381c776",
           "type": "comentario",
           "title": "Pensamento solto",
           "content": "Ainda não sei se este exemplo realmente ajuda. Vou deixá-lo registrado.",
@@ -220,19 +222,18 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z",
           "annotations": [
             {
-              "id": "note_fcdd3239-4a5f-4935-aef5-33f83e880906",
+              "id": "note_7c8141f3-4ba6-4902-aaf7-dc3d3bfa41bd",
               "text": "Esta observação não precisa virar outro argumento. É apenas uma nota anexada ao bloco.",
-              "createdAt": "2026-10-22T22:54:19.261Z"
+              "createdAt": "2026-10-23T03:54:39.422Z"
             }
-          ],
-          "fallacies": []
+          ]
         },
         {
-          "id": "node_354a8f5f-4668-4674-a9e5-186cf5c20190",
+          "id": "node_862f2df3-dd0f-40eb-b9b0-c69abac2b3a5",
           "type": "acordo",
           "title": "Aceito por enquanto",
           "content": "Aceito temporariamente essa distinção, mas quero testá-la em outra situação.",
@@ -243,12 +244,11 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "node_528e8b43-3b94-4b67-8412-d0f9a5205be8",
+          "id": "node_03ce178e-1c4d-4bf6-9933-cb87d3152c83",
           "type": "meta",
           "title": "Sobre o debate",
           "content": "Não preciso transformar toda fala do meu diálogo interno em argumento.",
@@ -259,12 +259,11 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "node_4c57702a-04bc-4896-a30e-757288185fc7",
+          "id": "node_a3f3c9a5-2ed3-4925-9665-e979c54b42ab",
           "type": "pausa",
           "title": "Retomar depois",
           "content": "Na próxima sessão: investigar melhor a diferença entre dano e julgamento moral.",
@@ -275,127 +274,124 @@
           "classification": "hipotese",
           "state": "ativo",
           "collapsed": false,
-          "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z",
-          "fallacies": []
+          "createdAt": "2026-10-23T03:54:39.422Z",
+          "updatedAt": "2026-10-23T03:54:39.422Z"
         }
       ],
       "edges": [
         {
-          "id": "edge_641629dd-5075-406e-bb19-0fc2c4768c73",
-          "source": "node_8d3733ac-83e9-47c9-bea2-7eae4c9d9667",
-          "target": "node_f6e4cf08-6c1c-49eb-bef5-dae37ee83824",
+          "id": "edge_e3d97aa3-4911-4260-b2c1-c20a09edc845",
+          "source": "node_c2d8796f-d8c7-4a48-83f3-7fceeda0c425",
+          "target": "node_8005028b-3866-4c1f-8127-ef26de8cde66",
           "relation": "continua",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_c93933e6-91e5-482c-acbb-5159e7c3d796",
-          "source": "node_f6e4cf08-6c1c-49eb-bef5-dae37ee83824",
-          "target": "node_596174df-7c90-4c64-ba4e-4066d27b6927",
+          "id": "edge_71cc8187-6eca-4ae4-87a4-1279143a83b2",
+          "source": "node_8005028b-3866-4c1f-8127-ef26de8cde66",
+          "target": "node_bd0de695-c2dc-4aed-b136-2385c187311a",
           "relation": "contesta",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_a9469d54-1fdb-440e-8275-25211d46191d",
-          "source": "node_596174df-7c90-4c64-ba4e-4066d27b6927",
-          "target": "node_67440740-c1bf-445c-a09b-df5d6bdbb91b",
+          "id": "edge_11af0eda-00f9-4d40-8748-00936ec989b7",
+          "source": "node_bd0de695-c2dc-4aed-b136-2385c187311a",
+          "target": "node_21fd57c4-0288-41c8-9c13-10f036e37fce",
           "relation": "continua",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_f098ae19-fd64-47ab-9143-7b1cec955fc9",
-          "source": "node_596174df-7c90-4c64-ba4e-4066d27b6927",
-          "target": "node_bbb8c1f8-1897-40fd-964a-69ae8660cd77",
+          "id": "edge_7e029cba-c7b1-4b5c-bc8d-fe3f28284573",
+          "source": "node_bd0de695-c2dc-4aed-b136-2385c187311a",
+          "target": "node_61219fe5-e126-4a79-b875-381b88156651",
           "relation": "exemplifica",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_ae4bf941-d0f3-4889-871d-0da1d0d2e986",
-          "source": "node_bbb8c1f8-1897-40fd-964a-69ae8660cd77",
-          "target": "node_b5c353d8-ec81-4c3c-92c7-f819bd333471",
+          "id": "edge_1e00da96-c3cc-4045-ad92-0c56673d3888",
+          "source": "node_61219fe5-e126-4a79-b875-381b88156651",
+          "target": "node_f840299a-9686-4147-a521-2a566d8408e1",
           "relation": "contesta",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_273e3d8f-77c2-422e-bf8f-711030a23f23",
-          "source": "node_67440740-c1bf-445c-a09b-df5d6bdbb91b",
-          "target": "node_a61ce614-52a2-41c4-8a12-6935a52d5c20",
+          "id": "edge_56b34a38-827c-4585-8aef-2ca4cdf1efec",
+          "source": "node_21fd57c4-0288-41c8-9c13-10f036e37fce",
+          "target": "node_b79b9703-3379-46db-88d9-acd204c880d0",
           "relation": "continua",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_95aa0e95-cb57-47c5-8d6f-d6688d819ffd",
-          "source": "node_b5c353d8-ec81-4c3c-92c7-f819bd333471",
-          "target": "node_a61ce614-52a2-41c4-8a12-6935a52d5c20",
+          "id": "edge_133e0486-a63c-41ae-8bb2-cc2749f4787d",
+          "source": "node_f840299a-9686-4147-a521-2a566d8408e1",
+          "target": "node_b79b9703-3379-46db-88d9-acd204c880d0",
           "relation": "exemplifica",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_15a9a140-2b0b-4324-b1bd-a0a92200dcd9",
-          "source": "node_a61ce614-52a2-41c4-8a12-6935a52d5c20",
-          "target": "node_406955e5-7d17-42c0-a3e4-23e703497a39",
+          "id": "edge_97a47a95-3dcb-4d2d-a1e2-e2c346484af8",
+          "source": "node_b79b9703-3379-46db-88d9-acd204c880d0",
+          "target": "node_0f3c411f-eead-4e32-8947-e24d033de770",
           "relation": "reformula",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_575d0579-57f4-4954-8b11-b8e786f8e486",
-          "source": "node_406955e5-7d17-42c0-a3e4-23e703497a39",
-          "target": "node_6f4336a4-dc29-41d8-aa0b-ee7567b8863f",
+          "id": "edge_6dd71492-ff5e-4894-abf9-93e5ce52f37b",
+          "source": "node_0f3c411f-eead-4e32-8947-e24d033de770",
+          "target": "node_5f310749-3602-4450-8639-a6ca5a2d7c6e",
           "relation": "apoia",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_b4cf06d2-3635-4106-a3c9-59a72ea31be4",
-          "source": "node_6f4336a4-dc29-41d8-aa0b-ee7567b8863f",
-          "target": "node_8d3733ac-83e9-47c9-bea2-7eae4c9d9667",
+          "id": "edge_a28bc5ba-921f-477a-bf72-b0da4ce60dad",
+          "source": "node_5f310749-3602-4450-8639-a6ca5a2d7c6e",
+          "target": "node_c2d8796f-d8c7-4a48-83f3-7fceeda0c425",
           "relation": "retorna",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_b862b9e6-849e-4ab2-a6e3-e0526d8d3463",
-          "source": "node_6f4336a4-dc29-41d8-aa0b-ee7567b8863f",
-          "target": "node_d382d759-9d67-4b67-92dd-c848082ec336",
+          "id": "edge_d194c530-69d5-45ec-b668-318b416921ba",
+          "source": "node_5f310749-3602-4450-8639-a6ca5a2d7c6e",
+          "target": "node_e1aae75d-355b-446b-9fdc-052c2c616262",
           "relation": "continua",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_7d13ce5d-2739-40b1-9e27-3441dea3307a",
-          "source": "node_8d3733ac-83e9-47c9-bea2-7eae4c9d9667",
-          "target": "node_13ba57fc-fc3a-4fcf-bc6d-82f47001b9d7",
+          "id": "edge_59bc79ea-d6b3-465e-82c9-2c21f2d4871a",
+          "source": "node_c2d8796f-d8c7-4a48-83f3-7fceeda0c425",
+          "target": "node_f3dd1954-e8b1-4c74-b9b2-1efcf626cb90",
           "relation": "continua",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_c1e2abe4-e000-4fec-b8fd-a6469df4d12d",
-          "source": "node_13ba57fc-fc3a-4fcf-bc6d-82f47001b9d7",
-          "target": "node_28b3f1f8-2fa5-4820-9528-134059c5dd26",
+          "id": "edge_7bd6f11e-a448-44a8-a028-1463f67e38ac",
+          "source": "node_f3dd1954-e8b1-4c74-b9b2-1efcf626cb90",
+          "target": "node_eb1fe7b4-7346-441e-be32-fa500381c776",
           "relation": "continua",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_f397fa26-445b-41cc-917e-3d4109d6550d",
-          "source": "node_28b3f1f8-2fa5-4820-9528-134059c5dd26",
-          "target": "node_354a8f5f-4668-4674-a9e5-186cf5c20190",
+          "id": "edge_3404b7c1-79a6-49d8-a0ec-82f601bdea66",
+          "source": "node_eb1fe7b4-7346-441e-be32-fa500381c776",
+          "target": "node_862f2df3-dd0f-40eb-b9b0-c69abac2b3a5",
           "relation": "continua",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_5fd82bc4-d719-4feb-9b10-7f43b6a7153c",
-          "source": "node_354a8f5f-4668-4674-a9e5-186cf5c20190",
-          "target": "node_528e8b43-3b94-4b67-8412-d0f9a5205be8",
+          "id": "edge_93db41b0-da17-4df7-9a94-65230f4ea0b5",
+          "source": "node_862f2df3-dd0f-40eb-b9b0-c69abac2b3a5",
+          "target": "node_03ce178e-1c4d-4bf6-9933-cb87d3152c83",
           "relation": "continua",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         },
         {
-          "id": "edge_5519736f-e704-4817-9afc-69ff23ad2ea0",
-          "source": "node_528e8b43-3b94-4b67-8412-d0f9a5205be8",
-          "target": "node_4c57702a-04bc-4896-a30e-757288185fc7",
+          "id": "edge_3571b5c6-c684-4b85-b9be-5c377a5dd00a",
+          "source": "node_03ce178e-1c4d-4bf6-9933-cb87d3152c83",
+          "target": "node_a3f3c9a5-2ed3-4925-9665-e979c54b42ab",
           "relation": "continua",
-          "createdAt": "2026-10-22T22:54:19.261Z"
+          "createdAt": "2026-10-23T03:54:39.422Z"
         }
-      ],
-      "sessions": [],
-      "completedAt": null
+      ]
     }
   ]
 }
