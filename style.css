@@ -64,3 +64,15 @@ button.primary,button.secondary,button.wide-primary,button.wide-secondary{border
 .batch-result>span{min-width:0;overflow-wrap:anywhere}.batch-result small{display:block;color:var(--muted);padding-top:3px}
 @media(max-width:620px){.modal-overlay{align-items:center;padding-left:8px;padding-right:8px}.modal-card,.modal-card.modal-wide{width:100%;max-height:calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));border-radius:13px}.modal-header{padding:12px 14px}.modal-body{padding:12px!important}.batch-list{max-height:min(49dvh,460px)}#modalContent .modal-actions{bottom:0;flex-wrap:wrap}#modalContent .modal-actions button{flex:1;white-space:normal}}
 @media(max-height:550px){.modal-card{max-height:calc(100dvh - 12px)}.modal-header{min-height:42px;padding:8px 12px}#modalContent>.modal-body{padding-top:10px}.batch-list{max-height:40dvh}}
+
+/* v0.2.2 — confirmação visual e contagem objetiva da classificação em lote */
+.batch-summary{border:1px solid var(--border);border-radius:12px;padding:14px 14px 11px;background:var(--surface2);margin:4px 0 14px}
+.batch-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch;text-align:center}
+.batch-stats>div{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-right:1px solid var(--border);min-width:0}
+.batch-stats>div:last-child{border-right:none}
+.batch-stats strong{font-size:clamp(22px,4vw,32px);font-variant-numeric:tabular-nums;line-height:1.15;color:var(--text)}
+.batch-stats span{font-size:11px;color:var(--muted);font-weight:650}
+.batch-summary .small-note{margin:13px 0 7px}
+.batch-breakdown{font-size:10px;line-height:1.55;color:var(--faint);margin:0}
+.toast[data-kind="success"]{background:#203f36;color:#e6ffed;border:1px solid #437861;font-weight:650;line-height:1.5;max-width:min(590px,92vw)}
+@media(max-width:430px){.batch-summary{padding:12px 9px}.batch-stats{gap:4px}.batch-stats span{font-size:10px}.toast[data-kind="success"]{font-size:11px;bottom:max(16px,env(safe-area-inset-bottom))}}

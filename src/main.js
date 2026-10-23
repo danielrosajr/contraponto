@@ -3,7 +3,7 @@ import {readApp,writeApp} from './storage.js';
 import {markdownFor,promptFor,downloadText,downloadSvgOrPng} from './export.js';
 import {GLOSSARY,GLOSSARY_GROUPS,definition} from './glossary.js';
 import {suggestThought} from './inference.js';
-import {planBulkClassification} from './batch.js';
+import {planBulkClassification,summarizeBulkClassification} from './batch.js';
 
 const $=id=>document.getElementById(id);
 let app, activeId=null, selectedId=null, view='map', pan={x:100,y:100},zoom=1, visible=new Set(), showMainline=true;
@@ -32,7 +32,29 @@ function setupInlineTerms(form){function update(name){const el=form.querySelecto
 }
 
 
-function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3100);}
+function toast(message,{duration=3100,kind='default'}={}){
+ const el=$('toast');el.textContent=message;el.dataset.kind=kind;
+ el.classList.add('show');clearTimeout(toastTimer);
+ toastTimer=setTimeout(()=>{el.classList.remove('show');el.removeAttribute('data-kind');},duration);
+}
+function batchToast(stats){
+ const lead=stats.changed?`✓ ${stats.changed} ${stats.changed===1?'bloco atualizado':'blocos atualizados'}`:'✓ Análise concluída, sem alterações';
+ toast(`${lead} · ${stats.unchanged} mantidos · ${stats.total} analisados`,{duration:6500,kind:'success'});
+}
+function batchSummaryHTML(stats){
+ const note=stats.changed
+   ?`As sugestões mudaram ${stats.changed} bloco${stats.changed===1?'':'s'} (${stats.changedTypes} tipos e ${stats.changedNatures} naturezas). Os demais mantiveram sua classificação.`
+   :'Nenhuma classificação foi modificada. Seus pensamentos permanecem como estavam.';
+ return `<section class="batch-summary" aria-label="Resumo da análise de pensamentos">
+  <div class="batch-stats">
+   <div><strong>${stats.total}</strong><span>Analisados</span></div>
+   <div><strong>${stats.changed}</strong><span>Alterados</span></div>
+   <div><strong>${stats.unchanged}</strong><span>Mantidos</span></div>
+  </div>
+  <p class="small-note">${note}</p>
+  <p class="batch-breakdown">${stats.alreadyUnchanged} já sem sugestão de mudança · ${stats.notSelected} sugestão${stats.notSelected===1?'':'ões'} não aplicada${stats.notSelected===1?'':'s'}${stats.ignoredBlank?` · ${stats.ignoredBlank} sem conteúdo`:''}${stats.preservedFacts?` · ${stats.preservedFacts} fato${stats.preservedFacts===1?'':'s'} preservado${stats.preservedFacts===1?'':'s'}`:''}.</p>
+ </section>`;
+}
 function persist(){if(!app)return;$('saveStatus').textContent='Salvando…';clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{
  try{await writeApp(app);$('saveStatus').textContent='✓ Salvo neste dispositivo';}
  catch(e){console.error(e);$('saveStatus').textContent='Erro ao salvar';toast('Erro no salvamento local. Exporte um backup JSON.');}
@@ -204,7 +226,11 @@ function batchClassify(){
  const r=reflect();if(!r)return;
  const plan=planBulkClassification(r);
  const rows=plan.changes;
- if(!rows.length){toast('Não foram encontradas sugestões diferentes das classificações atuais.');return;}
+ if(!rows.length){
+  const stats=summarizeBulkClassification(plan,[]);
+  openModal('Análise concluída',`${batchSummaryHTML(stats)}<div class="modal-actions"><button type="button" class="primary" data-close-modal>Entendi</button></div>`,()=>()=>batchToast(stats));
+  return;
+ }
  const summary=`<p class="small-note">${r.nodes.length} blocos analisados · <b>${rows.length} com sugestões de alteração</b>. Isto é um sistema de regras locais, não uma IA externa. Revise as classificações antes de aceitar. <b>Fatos marcados manualmente não são reclassificados automaticamente.</b></p>`;
  const cards=rows.map((entry,i)=>{
   const n=r.nodes.find(item=>item.id===entry.id);
@@ -224,19 +250,21 @@ function batchClassify(){
    if(!accepted.length)return;
    const ids=new Set(accepted.map(item=>item.id));
    mutation(()=>{const ts=now();for(const n of r.nodes){if(!ids.has(n.id))continue;const change=accepted.find(item=>item.id===n.id);if(!change)continue;n.type=change.after.type;n.classification=change.after.classification;n.updatedAt=ts;}});
-   showBatchReview(accepted);
-   toast(`${accepted.length} bloco(s) reclassificado(s). É possível revisar ou desfazer.`);
+   const stats=summarizeBulkClassification(plan,accepted.map(x=>x.id));
+   showBatchReview(accepted,stats);
   };
  },{wide:true});
 }
-function showBatchReview(changes){
+function showBatchReview(changes,stats){
  const items=changes.map(entry=>{
   const n=node(entry.id);if(!n)return '';
   return `<div class="batch-result"><span><b>${safeText(labelOf(n))}</b><small>${safeText(TYPES[n.type]?.[0]||n.type)} · ${safeText(CLASSES[n.classification]||'Não classificado')}</small></span><button type="button" class="secondary small" data-review-node="${safeText(n.id)}">Revisar</button></div>`;
  }).join('');
- openModal(`${changes.length} sugestões aplicadas`,`<p class="small-note">Suas notas, vozes, conexões e posições foram preservadas. Use <b>Revisar</b> para corrigir cada bloco ou <b>Desfazer lote</b> para recuperar as classificações anteriores em uma única ação. Se editar outro bloco antes, o histórico de desfazer seguirá a ordem das alterações.</p><div class="batch-list">${items}</div><div class="modal-actions"><button class="secondary" id="revertBatch" type="button">↶ Desfazer lote</button><button class="primary" type="button" data-close-modal>Concluir revisão depois</button></div>`,el=>{
-  el.querySelector('#revertBatch').onclick=()=>{closeModal();undoAction();toast('Lote desfeito; classificações anteriores restauradas.');};
-  el.querySelectorAll('[data-review-node]').forEach(button=>button.onclick=()=>{const id=button.dataset.reviewNode;closeModal();focusNode(id);openNodeEditor(id);});
+ let notifyWhenClosed=true;
+ openModal('Resumo das sugestões aplicadas',`${batchSummaryHTML(stats)}<p class="small-note">Suas notas, vozes, conexões e posições foram preservadas. Use <b>Revisar</b> para corrigir cada bloco ou <b>Desfazer lote</b> para recuperar as classificações anteriores em uma única ação. Se editar outro bloco antes, o histórico de desfazer seguirá a ordem das alterações.</p><div class="batch-list">${items}</div><div class="modal-actions"><button class="secondary" id="revertBatch" type="button">↶ Desfazer lote</button><button class="primary" type="button" data-close-modal>Concluir revisão depois</button></div>`,el=>{
+  el.querySelector('#revertBatch').onclick=()=>{notifyWhenClosed=false;closeModal();undoAction();toast('Lote desfeito; classificações anteriores restauradas.');};
+  el.querySelectorAll('[data-review-node]').forEach(button=>button.onclick=()=>{notifyWhenClosed=false;const id=button.dataset.reviewNode;closeModal();focusNode(id);openNodeEditor(id);});
+  return ()=>{if(notifyWhenClosed)batchToast(stats);};
  },{wide:true});
 }
 const QUICK = {

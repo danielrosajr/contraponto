@@ -21,3 +21,26 @@ export function planBulkClassification(reflection) {
   }
   return {total:nodes.length,ignoredBlank,preservedFacts,changes};
 }
+
+// Resumo transparente do que foi de fato aplicado, e não apenas sugerido.
+// Mantidos incluem blocos já adequados, sem texto e sugestões desmarcadas.
+export function summarizeBulkClassification(plan, acceptedIds=[]) {
+  const changes=Array.isArray(plan?.changes)?plan.changes:[];
+  const candidates=new Set(changes.map(c=>c.id));
+  const accepted=new Set(acceptedIds.filter(id=>candidates.has(id)));
+  const total=Math.max(0,Number(plan?.total)||0);
+  const changed=accepted.size;
+  const suggested=changes.length;
+  return {
+    total,
+    changed,
+    unchanged:Math.max(0,total-changed),
+    suggested,
+    notSelected:Math.max(0,suggested-changed),
+    alreadyUnchanged:Math.max(0,total-suggested),
+    changedTypes:changes.filter(c=>accepted.has(c.id)&&c.before.type!==c.after.type).length,
+    changedNatures:changes.filter(c=>accepted.has(c.id)&&c.before.classification!==c.after.classification).length,
+    ignoredBlank:Math.max(0,Number(plan?.ignoredBlank)||0),
+    preservedFacts:Math.max(0,Number(plan?.preservedFacts)||0)
+  };
+}

@@ -1,18 +1,56 @@
 # CONTRAPONTO — Meu Laboratório de Pensamentos
 
-**Versão:** `v0.2.1 — Revisão em Lote` · **Licença:** MIT · **Plataforma:** Web/PWA estática · **Idioma:** português brasileiro
+**Versão:** `v0.2.2 — Feedback de Classificação` · **Licença:** MIT · **Plataforma:** Web/PWA estática · **Idioma:** português brasileiro
 
 Um mapa visual, local e privado para raciocinar, debater perspectivas, explorar possibilidades e registrar sentimentos, perguntas, comentários, pausas e conclusões. **Sem cadastro, backend, chaves de API ou bibliotecas externas**. Implementação em JavaScript modular, CSS, SVG e IndexedDB.
 
 ## Começar no Ubuntu
 
 ```bash
-unzip CONTRAPONTO-v0.2.1.zip
-cd CONTRAPONTO-v0.2.1
+unzip CONTRAPONTO-v0.2.2.zip
+cd CONTRAPONTO-v0.2.2
 python3 -m http.server 8080
 ```
 
 Abra `http://localhost:8080`. Não abra o HTML diretamente pelo explorador de arquivos (`file://`); os módulos, o IndexedDB e a PWA exigem um servidor HTTP local ou HTTPS. Offline após o primeiro carregamento bem-sucedido e cache do service worker instalado.
+
+## Melhorias da v0.2.2 — Confirmação de classificações
+
+Depois de abrir uma reflexão, use **Ferramentas → Organizar → Aplicar sugestões a todos os blocos**. Revise as sugestões e marque quais serão aceitas. Ao clicar **Aplicar N sugestões**, o app abre um **resumo imediato**:
+
+- **Analisados:** todos os blocos presentes na reflexão (inclusive blocos sem texto).
+- **Alterados:** blocos cujas sugestões foram efetivamente aceitas e aplicadas; alterar tipo e natureza no mesmo bloco conta **uma única vez**.
+- **Mantidos:** todos os demais blocos, seja por já estarem adequados, não terem sugestão ou terem sido desmarcados.
+- **Detalhamento:** informa tipos e naturezas modificados, sugestões não selecionadas, blocos sem texto e fatos preservados (quando houver).
+
+Exemplo: 15 analisados, 10 alterados, 5 mantidos. **Não confundir quantidades sugeridas com quantidades realmente aplicadas.** Se nada precisar mudar, o resumo mostra **0 alterados** e o total mantido. Depois de fechar o resumo, aparece um **toast** de confirmação com os mesmos totais, sem encobrir os botões de revisão. O **Desfazer lote** permanece disponível para recuperar a classificação anterior.
+
+- Não houve mudança do banco ou do formato de backups (`schemaVersion: 2`).
+- Cache offline atualizado para `contraponto-0.2.2` e versão do pacote `0.2.2`.
+- 20 testes de lógica passaram. A interface do resumo foi testada em Chromium **com armazenamento em memória simulado**, nas resoluções 605×602 e 390×640 (fluxos de aplicar, desmarcar, confirmar, reabrir e nenhuma alteração). O navegador não pôde acessar `localhost` devido a política do ambiente; IndexedDB e service worker em navegador real ainda devem ser testados no seu dispositivo.
+- `ROADMAP.md` registra a ideia do **Xadrez de Argumentos** como recurso futuro, ainda não implementado.
+
+## Como atualizar no GitHub (v0.2.2)
+
+Substitua os arquivos da raiz da v0.2.1 pelos do ZIP da v0.2.2. Mantenha o **mesmo endereço do GitHub Pages**, para preservar o armazenamento local vinculado à origem do site. Faça um backup JSON antes da atualização.
+
+- Branch: `fix/contraponto-v0.2.2-feedback-classificacao`
+- Commit: `fix: confirmar classificacao em lote com resumo e toast`
+- Tag: `v0.2.2`
+- Release: **CONTRAPONTO v0.2.2 — Feedback de Classificação**
+
+No terminal, dentro do clone do repositório:
+
+```bash
+git checkout main && git pull
+git checkout -b fix/contraponto-v0.2.2-feedback-classificacao
+# copie os arquivos novos por cima dos antigos na raiz
+git add .
+git commit -m "fix: confirmar classificacao em lote com resumo e toast"
+git push -u origin fix/contraponto-v0.2.2-feedback-classificacao
+```
+
+Abra um pull request para `main`, faça o merge e publique a tag/release após a validação. GitHub Pages Actions continua configurado em `.github/workflows/deploy.yml`.
 
 ## Correções e novidades na v0.2.1
 
@@ -33,7 +71,7 @@ Abra `http://localhost:8080`. Não abra o HTML diretamente pelo explorador de ar
 5. **Pausar e retomar.** Clique em `⏸ Registrar pausa`, descreva o que falta explorar e salve. A reflexão recebe o status **pausado**. Quando voltar, clique em `↗ Retomar` para retornar ao último marcador. Os marcadores permanecem no mapa.
 6. **Provocações ampliadas.** Agora há perguntas para distinguir sentimento, consequência, avaliação moral, autonomia, consentimento e confiança, sem apresentar análise psicológica como fato.
 
-## Como publicar uma atualização no GitHub Pages
+## Instruções anteriores de publicação no GitHub Pages (v0.2.1)
 
 Se **já usa o repositório `contraponto`**, substitua os arquivos na mesma raiz; não crie um segundo repositório por obrigação. Antes de atualizar, faça um backup **Exportar → Backup completo (.json)** no app, especialmente se trocar de endereço.
 

@@ -1,5 +1,15 @@
 # Histórico de versões
 
+## v0.2.2 — Feedback de Classificação (22/10/2026)
+
+- Confirmação da classificação em lote com modal de resumo: analisados, alterados e mantidos; divisão por tipo/natureza e indicações de sugestões desmarcadas.
+- Toast de sucesso com os totais aparece ao fechar o resumo, evitando cobrir botões da janela; tempo maior de leitura.
+- Caso sem sugestões também exibe confirmação com zero mudanças, sem alterar o mapa.
+- Sem mudanças no IndexedDB, exportação ou formato de backup; cache offline renovado e versão `0.2.2`.
+- +3 testes de contagem de resultados (20 no total); UI simulada testada no Chromium em 605×602 e 390×640 com aplicação parcial e total, recapitulação e nenhuma alteração.
+- Incluído `ROADMAP.md` para a ideia futura de xadrez simbólico de argumentos, sem implementar a funcionalidade nesta versão.
+
+
 ## v0.2.1 — Revisão em Lote (22/10/2026)
 
 ### Correções
