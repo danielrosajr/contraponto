@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "reflections": [
     {
       "id": "reflection_7a8682b4-5dee-42b6-abd0-fcbf423c496c",
@@ -45,7 +45,8 @@
           "y": 0,
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.259Z",
-          "updatedAt": "2026-10-22T22:54:19.259Z"
+          "updatedAt": "2026-10-22T22:54:19.259Z",
+          "fallacies": []
         },
         {
           "id": "node_f6e4cf08-6c1c-49eb-bef5-dae37ee83824",
@@ -60,7 +61,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         },
         {
           "id": "node_596174df-7c90-4c64-ba4e-4066d27b6927",
@@ -75,7 +77,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         },
         {
           "id": "node_67440740-c1bf-445c-a09b-df5d6bdbb91b",
@@ -90,7 +93,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         },
         {
           "id": "node_bbb8c1f8-1897-40fd-964a-69ae8660cd77",
@@ -105,7 +109,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         },
         {
           "id": "node_b5c353d8-ec81-4c3c-92c7-f819bd333471",
@@ -120,7 +125,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         },
         {
           "id": "node_a61ce614-52a2-41c4-8a12-6935a52d5c20",
@@ -135,7 +141,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         },
         {
           "id": "node_406955e5-7d17-42c0-a3e4-23e703497a39",
@@ -150,7 +157,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         },
         {
           "id": "node_6f4336a4-dc29-41d8-aa0b-ee7567b8863f",
@@ -165,7 +173,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         },
         {
           "id": "node_d382d759-9d67-4b67-92dd-c848082ec336",
@@ -180,7 +189,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         },
         {
           "id": "node_13ba57fc-fc3a-4fcf-bc6d-82f47001b9d7",
@@ -195,7 +205,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         },
         {
           "id": "node_28b3f1f8-2fa5-4820-9528-134059c5dd26",
@@ -217,7 +228,8 @@
               "text": "Esta observação não precisa virar outro argumento. É apenas uma nota anexada ao bloco.",
               "createdAt": "2026-10-22T22:54:19.261Z"
             }
-          ]
+          ],
+          "fallacies": []
         },
         {
           "id": "node_354a8f5f-4668-4674-a9e5-186cf5c20190",
@@ -232,7 +244,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         },
         {
           "id": "node_528e8b43-3b94-4b67-8412-d0f9a5205be8",
@@ -247,7 +260,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         },
         {
           "id": "node_4c57702a-04bc-4896-a30e-757288185fc7",
@@ -262,7 +276,8 @@
           "state": "ativo",
           "collapsed": false,
           "createdAt": "2026-10-22T22:54:19.261Z",
-          "updatedAt": "2026-10-22T22:54:19.261Z"
+          "updatedAt": "2026-10-22T22:54:19.261Z",
+          "fallacies": []
         }
       ],
       "edges": [
@@ -378,7 +393,9 @@
           "relation": "continua",
           "createdAt": "2026-10-22T22:54:19.261Z"
         }
-      ]
+      ],
+      "sessions": [],
+      "completedAt": null
     }
   ]
 }

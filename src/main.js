@@ -4,10 +4,16 @@ import {markdownFor,promptFor,downloadText,downloadSvgOrPng} from './export.js';
 import {GLOSSARY,GLOSSARY_GROUPS,definition} from './glossary.js';
 import {suggestThought} from './inference.js';
 import {planBulkClassification,summarizeBulkClassification} from './batch.js';
+import {neighbours,pathTo,pathRecap,suspectedGaps,branchIdFor,formatDuration} from './journey.js';
+import {FALLACIES,FALLACY_STATUSES} from './fallacies.js';
+import {metricsFor,reportMarkdown} from './metrics.js';
+import {chessPromptFor} from './chess.js';
 
 const $=id=>document.getElementById(id);
 let app, activeId=null, selectedId=null, view='map', pan={x:100,y:100},zoom=1, visible=new Set(), showMainline=true;
 let undo=[],redo=[],saveTimer=null,toastTimer=null,modalCleanup=null,miniExtent=null,edgeFocusId=null;
+let journeyNodes=new Set(),journeyEdges=new Set(),journeyTimer=null,tracker=null,trackingTimer=null,navHistory=[];
+const IDLE_MS=5*60000;
 const isMobile=()=>innerWidth<=800;
 const reflect=()=>app.reflections.find(r=>r.id===activeId);
 const node=id=>reflect()?.nodes.find(n=>n.id===id);
@@ -23,7 +29,7 @@ const termHTML=(group,key)=>{const d=definition(group,key);return d?`<b>${safeTe
 function glossaryModal(){openModal('Minidicionário de pensamentos',`<p class="small-note">Toque em um termo para entender quando utilizá-lo. Estas definições não julgam se uma ideia é correta ou verdadeira.</p><input type="search" id="glossarySearch" placeholder="Buscar termo ou significado..." aria-label="Buscar no dicionário" autofocus /><div class="glossary-results" id="glossaryResults"></div>`,el=>{
  const out=el.querySelector('#glossaryResults'),search=el.querySelector('#glossarySearch');
  const paint=()=>{const q=search.value.toLocaleLowerCase('pt-BR').trim();out.innerHTML=GLOSSARY_GROUPS.map(([group,title])=>{
- const entries=alphabetize(Object.entries(GLOSSARY[group]).filter(([id,[label,desc,ex]])=>[label,desc,ex].join(' ').toLocaleLowerCase('pt-BR').includes(q)).map(([id,term])=>[id,term[0]]));
+ const entries=Object.entries(GLOSSARY[group]).filter(([id,[label,desc,ex]])=>[label,desc,ex].join(' ').toLocaleLowerCase('pt-BR').includes(q)).sort((a,b)=>a[1][0].localeCompare(b[1][0],'pt-BR',{sensitivity:'base'}));
  return entries.length?`<section class="dictionary-section"><h3>${title}</h3>${entries.map(([id,d])=>`<details class="dictionary-item"><summary>${safeText(d[0])}</summary><p>${safeText(d[1])}</p><small>Exemplo: “${safeText(d[2])}”</small></details>`).join('')}</section>`:'';}).join('')||'<p class="small-note">Nenhum termo encontrado.</p>';};
  search.addEventListener('input',paint);paint();
  });}
@@ -55,6 +61,27 @@ function batchSummaryHTML(stats){
   <p class="batch-breakdown">${stats.alreadyUnchanged} já sem sugestão de mudança · ${stats.notSelected} sugestão${stats.notSelected===1?'':'ões'} não aplicada${stats.notSelected===1?'':'s'}${stats.ignoredBlank?` · ${stats.ignoredBlank} sem conteúdo`:''}${stats.preservedFacts?` · ${stats.preservedFacts} fato${stats.preservedFacts===1?'':'s'} preservado${stats.preservedFacts===1?'':'s'}`:''}.</p>
  </section>`;
 }
+// Relógio de atenção aproximada: interrompe após 5 minutos sem interação, ao ocultar o app e ao sair.
+function refreshClock(){const r=reflect();const m=r?metricsFor(r):null;const e=$('sessionClock');if(e)e.textContent=m?`◷ ${formatDuration(m.totalMs)}`:'00:00';}
+function stopTracking(){if(!tracker)return;trackTick();const r=app?.reflections.find(x=>x.id===tracker.id),ss=r?.sessions?.find(x=>x.id===tracker.sessionId);if(ss)ss.endedAt=now();tracker=null;persist();refreshClock();}
+function trackTick(){if(!tracker)return;const t=Date.now();const r=app?.reflections.find(x=>x.id===tracker.id);const ss=r?.sessions?.find(x=>x.id===tracker.sessionId);if(!ss){tracker=null;return;}
+ const end=Math.min(t,tracker.lastActivity+IDLE_MS),delta=Math.max(0,end-tracker.lastTick);
+ if(delta>0&&document.visibilityState==='visible'){
+  ss.activeMs=(ss.activeMs||0)+delta;
+  if(tracker.focusId){const branch=branchIdFor(r,tracker.focusId);if(branch)ss.focusMs[branch]=(ss.focusMs[branch]||0)+delta;}
+ }
+ ss.endedAt=new Date(end).toISOString();tracker.lastTick=t;refreshClock();
+ if(t>=tracker.lastActivity+IDLE_MS){tracker=null;persist();}
+}
+function startTracking(){const r=reflect();if(!r||r.status!=='em andamento'||document.visibilityState==='hidden'||tracker)return;
+ const ts=now();const ss={id:uid('session'),startedAt:ts,endedAt:ts,activeMs:0,focusMs:{}};
+ r.sessions||=[];r.sessions.push(ss);if(r.sessions.length>1000)r.sessions.shift();
+ tracker={id:r.id,sessionId:ss.id,lastTick:Date.now(),lastActivity:Date.now(),focusId:selectedId};persist();refreshClock();
+}
+function activity(){if(!activeId||document.visibilityState==='hidden')return;
+ if(!tracker){startTracking();return;}trackTick();if(tracker)tracker.lastActivity=Date.now();
+}
+function changeTrackedFocus(id){if(tracker){trackTick();if(tracker)tracker.focusId=id;}}
 function persist(){if(!app)return;$('saveStatus').textContent='Salvando…';clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{
  try{await writeApp(app);$('saveStatus').textContent='✓ Salvo neste dispositivo';}
  catch(e){console.error(e);$('saveStatus').textContent='Erro ao salvar';toast('Erro no salvamento local. Exporte um backup JSON.');}
@@ -81,9 +108,9 @@ function renderLibrary(){ $('library').classList.remove('hidden');$('workspace')
  $('reflectionCount').textContent=app.reflections.length;
  $('reflectionGrid').innerHTML=arr.length?arr.map(r=>`<article class="reflection-card" data-ref="${safeText(r.id)}"><div class="reflection-card-top"><span class="status-pill ${r.status==='concluído'?'done':r.status==='pausado'?'paused':''}">${safeText(r.archived?'Arquivada':r.status)}</span><div class="card-menu"><button class="icon-btn" data-refmenu="${safeText(r.id)}" aria-label="Opções da reflexão">⋯</button><div class="menu-dropdown hidden" id="menu-${safeText(r.id)}"><button data-libaction="edit">✎ Editar</button><button data-libaction="duplicate">▣ Duplicar</button><button data-libaction="archive">${r.archived?'↩ Desarquivar':'▤ Arquivar'}</button><button data-libaction="delete">✕ Excluir</button></div></div></div><h3>${safeText(r.title)}</h3><p class="question">${safeText(r.question)}</p><div class="tags">${r.tags.slice(0,4).map(t=>`<span class="tag">${safeText(t)}</span>`).join('')||'<span class="tag">Sem etiquetas</span>'}</div><div class="card-footer"><small>${r.nodes.length} blocos · ${niceDate(r.updatedAt)}</small><button data-libaction="open">Continuar →</button></div></article>`).join(''):`<div class="empty-library"><h3>Sem reflexões nesta visualização</h3><p>Crie sua primeira reflexão ou mude o filtro.</p><button class="primary" data-library-create>＋ Nova reflexão</button></div>`;
 }
-function goHome(){activeId=null;selectedId=null;closeModal();undo=[];redo=[];$('sidebar').classList.remove('collapsed');$('sidebar').classList.toggle('mobile-hidden',isMobile());renderLibrary();}
-function openReflection(id){const r=app.reflections.find(r=>r.id===id);if(!r)return;closeModal();activeId=id;selectedId=null;undo=[];redo=[];view='map';pan={x:50,y:50};zoom=1;
- $('library').classList.add('hidden');$('workspace').classList.remove('hidden');$('sidebar').classList.toggle('mobile-hidden',isMobile());$('sidebar').classList.remove('collapsed');renderWorkspace();requestAnimationFrame(()=>fitMap());}
+function goHome(){stopTracking();clearJourneyHighlight();activeId=null;selectedId=null;closeModal();undo=[];redo=[];$('sidebar').classList.remove('collapsed');$('sidebar').classList.toggle('mobile-hidden',isMobile());renderLibrary();}
+function openReflection(id){const r=app.reflections.find(r=>r.id===id);if(!r)return;stopTracking();clearJourneyHighlight();closeModal();activeId=id;selectedId=null;undo=[];redo=[];navHistory=[];view='map';pan={x:50,y:50};zoom=1;
+ $('library').classList.add('hidden');$('workspace').classList.remove('hidden');$('sidebar').classList.toggle('mobile-hidden',isMobile());$('sidebar').classList.remove('collapsed');renderWorkspace();requestAnimationFrame(()=>fitMap());startTracking();}
 function editReflection(id){const r=id?app.reflections.find(x=>x.id===id):null;
  formModal(r?'Editar reflexão':'Nova reflexão',`${field('title','Título',r?.title||'','input',true,'autofocus maxlength="250"')}${field('question','Pergunta principal',r?.question||'','textarea',true,'maxlength="10000"')}${field('description','Descrição (opcional)',r?.description||'','textarea',false,'maxlength="20000"')}${field('tags','Etiquetas separadas por vírgula',r?.tags.join(', ')||'')}${r?selectField('status','Situação',[['em andamento','Em andamento'],['pausado','Pausado'],['concluído','Concluído']],r.status):''}`,
  r?'Salvar alterações':'Criar reflexão',data=>{const title=data.get('title').trim(),question=data.get('question').trim();if(!title||!question)return toast('Informe título e pergunta principal.'),false;
@@ -92,13 +119,14 @@ function editReflection(id){const r=id?app.reflections.find(x=>x.id===id):null;
  else {const created=newReflection(title,question,data.get('description'),tags);app.reflections.push(created);persist();openReflection(created.id);}return true;});}
 function handleLibraryAction(action,id){const r=app.reflections.find(x=>x.id===id);if(!r)return;
  if(action==='open')return openReflection(id);if(action==='edit')return editReflection(id);
- if(action==='duplicate'){const c=clone(r),map=new Map();c.id=uid('reflection');c.title=`${r.title} (cópia)`;c.createdAt=now();c.updatedAt=now();c.archived=false;c.nodes.forEach(n=>{const old=n.id;n.id=uid('node');map.set(old,n.id);});c.edges.forEach(e=>{e.id=uid('edge');e.source=map.get(e.source);e.target=map.get(e.target);});app.reflections.push(c);persist();renderLibrary();toast('Reflexão duplicada.');}
+ if(action==='duplicate'){const c=clone(r),map=new Map();c.sessions=[];c.completedAt=null;c.id=uid('reflection');c.title=`${r.title} (cópia)`;c.createdAt=now();c.updatedAt=now();c.archived=false;c.nodes.forEach(n=>{const old=n.id;n.id=uid('node');map.set(old,n.id);});c.edges.forEach(e=>{e.id=uid('edge');e.source=map.get(e.source);e.target=map.get(e.target);});app.reflections.push(c);persist();renderLibrary();toast('Reflexão duplicada.');}
  if(action==='archive'){r.archived=!r.archived;r.updatedAt=now();persist();renderLibrary();toast(r.archived?'Reflexão arquivada.':'Reflexão restaurada.');}
  if(action==='delete'){if(!confirm(`Excluir definitivamente “${r.title}” e todos os blocos?\n\nA ação não pode ser desfeita.`))return;app.reflections=app.reflections.filter(x=>x.id!==id);persist();renderLibrary();toast('Reflexão excluída.');}}
 
 function renderWorkspace(){const r=reflect();if(!r)return;
  $('currentTitle').textContent=r.title;$('currentQuestion').textContent=r.question;
- $('resumeSession').classList.toggle('hidden',r.status!=='pausado');
+ $('resumeSession').classList.toggle('hidden',!r.nodes.some(n=>n.type==='pausa')&&!r.sessions?.length);
+ $('finishBtn').classList.toggle('hidden',r.status==='concluído');refreshClock();
  for(const el of document.querySelectorAll('[data-view]'))el.classList.toggle('active',el.dataset.view===view);
  $('mapTab').classList.toggle('active',view==='map');$('historyTab').classList.toggle('active',view==='history');
  $('graphPanel').classList.toggle('hidden',view!=='map');$('historyPanel').classList.toggle('hidden',view!=='history');
@@ -119,10 +147,10 @@ const nodeHeights=new Map();
 function nodeMetrics(id){const n=node(id);if(!n)return {h:170};return {h:nodeHeights.get(id)||190};}
 function renderGraph(){const r=reflect();if(!r)return;visible=getVisible();$('graphEmpty').classList.toggle('hidden',!!r.nodes.length);
  $('graphNodes').innerHTML=r.nodes.filter(n=>visible.has(n.id)).map(n=>{const t=TYPES[n.type]||TYPES.premissa,v=voice(n.voiceId),childCount=r.edges.filter(e=>e.source===n.id&&e.relation!=='retorna').length;
- return `<div class="thought-node ${selectedId===n.id?'selected':''} ${n.state==='abandonado'?'inactive':''}" data-node="${safeText(n.id)}" style="left:${n.x}px;top:${n.y}px;--node-color:${t[2]}"><div class="node-inner"><div class="node-label"><span>${safeText(t[1])} ${safeText(t[0])}</span>${childCount?`<span class="collapse-indicator" title="Clique duas vezes no indicador para recolher ou expandir">${n.collapsed?'▸':'▾'} ${childCount}</span>`:''}</div><div class="node-title">${safeText(n.title||t[0])}</div><div class="node-content">${safeText(n.content)}</div><div class="node-footer"><span class="voice-chip"><i class="voice-dot" style="--voice-color:${safeText(v?.color||'#90a6c1')}"></i>${safeText(v?.name||'Sem voz')}</span><span>${n.annotations?.length?`◫ ${n.annotations.length} · `:''}${safeText(STATES[n.state]||'Ativo')}</span></div></div></div>`;
+ return `<div class="thought-node ${selectedId===n.id?'selected':''} ${journeyNodes.size?(journeyNodes.has(n.id)?'journey-lit':'journey-muted'):''} ${n.state==='abandonado'?'inactive':''}" data-node="${safeText(n.id)}" style="left:${n.x}px;top:${n.y}px;--node-color:${t[2]}"><div class="node-inner"><div class="node-label"><span>${safeText(t[1])} ${safeText(t[0])}</span>${childCount?`<span class="collapse-indicator" title="Clique duas vezes no indicador para recolher ou expandir">${n.collapsed?'▸':'▾'} ${childCount}</span>`:''}</div><div class="node-title">${safeText(n.title||t[0])}</div><div class="node-content">${safeText(n.content)}</div><div class="node-footer"><span class="voice-chip"><i class="voice-dot" style="--voice-color:${safeText(v?.color||'#90a6c1')}"></i>${safeText(v?.name||'Sem voz')}</span><span>${n.annotations?.length?`◫ ${n.annotations.length} · `:''}${n.fallacies?.length?`⚑ ${n.fallacies.length} · `:''}${safeText(STATES[n.state]||'Ativo')}</span></div></div></div>`;
  }).join('');
  for(const el of $('graphNodes').children)nodeHeights.set(el.dataset.node,el.offsetHeight);
- renderEdges();updateTransform();drawMini();$('selectionHint').textContent=selectedId?'Arraste o cabeçalho do bloco para reposicioná-lo.':'Escolha um pensamento para continuar seu raciocínio.';
+ renderEdges();updateTransform();drawMini();$('selectionHint').textContent=selectedId?'Use ← e → para seguir as conexões.':'Escolha um pensamento para continuar seu raciocínio.';updateNavigator();
 }
 function edgeGeometry(a,b){let x1=a.x+280,y1=a.y+nodeMetrics(a.id).h/2,x2=b.x,y2=b.y+nodeMetrics(b.id).h/2;
  if(x2>=x1-15){const d=Math.max(65,Math.abs(x2-x1)*.48);return {d:`M${x1} ${y1} C${x1+d} ${y1} ${x2-d} ${y2} ${x2} ${y2}`,mx:(x1+x2)/2,my:(y1+y2)/2-9};}
@@ -131,15 +159,15 @@ function edgeGeometry(a,b){let x1=a.x+280,y1=a.y+nodeMetrics(a.id).h/2,x2=b.x,y2
 }
 function renderEdges(){const r=reflect();if(!r)return;
  $('graphEdges').innerHTML=`<defs><marker id="edgeArrow" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L11 6L1 11Z" fill="#8a9fc1"/></marker></defs>`+r.edges.filter(e=>visible.has(e.source)&&visible.has(e.target)).map(e=>{
- const a=node(e.source),b=node(e.target);if(!a||!b)return '';const g=edgeGeometry(a,b),main=showMainline&&['continua','reformula','retorna'].includes(e.relation),label=RELATIONS[e.relation]||e.relation;
- return `<g><path class="edge-visible ${main?'mainline':''} ${e.relation==='contesta'?'contest':''}" d="${g.d}"/><path class="edge-hit" d="${g.d}" data-edge="${safeText(e.id)}"/><text class="edge-label" text-anchor="middle" x="${g.mx}" y="${g.my}">${safeText(label)}</text></g>`;}).join('');
+ const a=node(e.source),b=node(e.target);if(!a||!b)return '';const g=edgeGeometry(a,b),main=showMainline&&['continua','reformula','retorna'].includes(e.relation),label=RELATIONS[e.relation]||e.relation;const journey=journeyEdges.has(e.id);
+ return `<g><path class="edge-visible ${journey?'journey-edge':''} ${journeyEdges.size&&!journey?'journey-edge-muted':''} ${main?'mainline':''} ${e.relation==='contesta'?'contest':''}" d="${g.d}"/><path class="edge-hit" d="${g.d}" data-edge="${safeText(e.id)}"/><text class="edge-label" text-anchor="middle" x="${g.mx}" y="${g.my}">${safeText(label)}</text></g>`;}).join('');
 }
 function updateTransform(){ $('graphStage').style.transform=`translate(${pan.x}px,${pan.y}px) scale(${zoom})`;$('zoomLabel').textContent=`${Math.round(zoom*100)}%`;}
 function canvasSize(){return {width:$('graphViewport').clientWidth,height:$('graphViewport').clientHeight};}
 function fitMap(){const r=reflect();if(!r||view!=='map')return;const nodes=r.nodes.filter(n=>visible.has(n.id));if(!nodes.length)return;
  const left=Math.min(...nodes.map(n=>n.x))-65,right=Math.max(...nodes.map(n=>n.x+280))+65,top=Math.min(...nodes.map(n=>n.y))-60,bottom=Math.max(...nodes.map(n=>n.y+nodeMetrics(n.id).h))+60;
  const {width,height}=canvasSize();if(!width||!height)return;zoom=Math.min(1.12,Math.max(.22,Math.min(width/(right-left),height/(bottom-top))));pan={x:(width-(left+right)*zoom)/2,y:(height-(top+bottom)*zoom)/2};updateTransform();drawMini();}
-function focusNode(id){const n=node(id);if(!n)return;changeView('map');if(!visible.has(id)){for(const other of reflect().nodes)other.collapsed=false;renderGraph();}
+function focusNode(id){const n=node(id);if(!n)return;changeTrackedFocus(id);changeView('map');if(!visible.has(id)){for(const other of reflect().nodes)other.collapsed=false;renderGraph();}
  selectedId=id;const {width,height}=canvasSize();pan={x:width/2-(n.x+140)*zoom,y:height/2-(n.y+nodeMetrics(id).h/2)*zoom};renderWorkspace();if(isMobile())$('inspector').classList.add('hidden');updateTransform();drawMini();}
 function setZoom(z,cx,cy){const {width,height}=canvasSize();cx??=width/2;cy??=height/2;const currentX=(cx-pan.x)/zoom,currentY=(cy-pan.y)/zoom;zoom=Math.min(2.5,Math.max(.2,z));pan.x=cx-currentX*zoom;pan.y=cy-currentY*zoom;updateTransform();drawMini();}
 function drawMini(){const r=reflect();if(!r||!r.nodes.length)return;const nodes=r.nodes.filter(n=>visible.has(n.id));if(!nodes.length)return;
@@ -148,12 +176,17 @@ function drawMini(){const r=reflect();if(!r||!r.nodes.length)return;const nodes=
  const {width:vw,height:vh}=canvasSize();const visleft=(0-pan.x)/zoom,vistop=(0-pan.y)/zoom,visright=(vw-pan.x)/zoom,visbottom=(vh-pan.y)/zoom;
  $('miniMapSvg').innerHTML=nodes.map(n=>`<rect x="${X(n.x)}" y="${Y(n.y)}" width="${Math.max(3,280/width*200)}" height="${Math.max(2,nodeMetrics(n.id).h/height*100)}" rx="2" fill="${TYPES[n.type]?.[2]||'#8a9fc1'}" opacity=".8"/>`).join('')+`<rect x="${X(visleft)}" y="${Y(vistop)}" width="${(visright-visleft)/width*200}" height="${(visbottom-vistop)/height*100}" stroke="#fff" stroke-width="1.6" fill="#9bb6ff18"/>`;
 }
-function selectNode(id){selectedId=id;for(const el of $('graphNodes').children)el.classList.toggle('selected',el.dataset.node===id);renderInspector();$('inspector').classList.toggle('hidden',!selectedId||view!=='map');}
+function selectNode(id){changeTrackedFocus(id);selectedId=id;for(const el of $('graphNodes').children)el.classList.toggle('selected',el.dataset.node===id);renderInspector();$('inspector').classList.toggle('hidden',!selectedId||view!=='map');updateNavigator();}
 function renderInspector(){const r=reflect(),n=node(selectedId);if(!r||!n)return;
  const t=TYPES[n.type]||TYPES.comentario,v=voice(n.voiceId),incomings=r.edges.filter(e=>e.target===n.id),outgoings=r.edges.filter(e=>e.source===n.id),notes=n.annotations||[];
  $('inspectorContent').innerHTML=`<div class="inspector-body"><div class="info-line" style="color:${t[2]}">${safeText(t[1])} ${safeText(t[0])} <button class="inline-help" data-inspector="dictionary">? significado</button></div><h2>${safeText(n.title||t[0])}</h2><div class="content-paragraph">${safeText(n.content)}</div>${n.notes?`<p class="small-note"><b>Contexto:</b> ${safeText(n.notes)}</p>`:''}<div class="inline-metas"><span class="tag">${safeText(v?.name||'Sem voz')}</span><span class="tag">${safeText(CLASSES[n.classification]||'Não classificado')}</span><span class="tag">${safeText(STATES[n.state]||'Ativo')}</span></div>
  <div class="inspector-footer"><button class="secondary small" data-inspector="edit">✎ Editar bloco</button><button class="secondary small" data-inspector="connect">⤳ Conectar</button><button class="secondary small" data-inspector="collapse">${n.collapsed?'▸ Expandir':'▾ Recolher'}</button></div>
- ${n.type==='pausa'?`<div class="resume-hint"><b>Ponto de retomada</b><p>Este bloco registra onde a conversa parou.</p><button class="secondary small" data-inspector="resumeFrom">↗ Continuar daqui</button></div>`:''}
+ ${n.type==='pausa'?`<div class="resume-hint"><b>Ponto de retomada</b><p>Este bloco registra onde a conversa parou.</p><button class="secondary small" data-inspector="resumeFrom">↗ Retomar com resumo</button></div>`:''}
+ <p class="small-note">Criado: ${safeText(niceDate(n.createdAt))} · Editado: ${safeText(niceDate(n.updatedAt))}</p>
+ <div class="section-title">POSSÍVEIS FALÁCIAS (${(n.fallacies||[]).length})</div>
+ <p class="small-note">Marcadas por você, não verificadas automaticamente. Um rótulo não prova um erro.</p>
+ <div class="fallacy-list">${(n.fallacies||[]).map(f=>`<div class="fallacy-row"><b>⚑ ${safeText(FALLACIES[f.key]?.[0]||f.key)}</b><small>${safeText(FALLACY_STATUSES[f.status]||f.status)}</small><p>${safeText(f.note)}</p><button type="button" class="secondary small" data-edit-fallacy="${safeText(f.id)}">Revisar</button></div>`).join('')||'<span class="small-note">Nenhuma falácia marcada.</span>'}</div>
+ <button class="secondary small" data-inspector="addFallacy">⚑ Marcar possível falácia</button>
  <div class="section-title">CONTINUAR A PARTIR DAQUI</div><div class="action-grid">
  ${[['continue','↗ Continuar'],['question','? Perguntar'],['object','! Objetar'],['respond','↩ Responder'],['example','▦ Exemplo'],['scenario','◇ Cenário'],['emotion','♡ Emoção'],['conclude','◉ Concluir'],['branch','⑂ Ramificação'],['return','↶ Retornar'],['comment','☷ Comentar'],['pause','⏸ Pausar'],['agree','≈ Concordar'],['meta','↹ Sobre o debate'],['plan','☰ Organizar']].sort((a,b)=>a[1].replace(/^[^\p{L}]+/u,'').localeCompare(b[1].replace(/^[^\p{L}]+/u,''),'pt-BR',{sensitivity:'base'})).map(([a,l])=>`<button data-quick="${a}">${l}</button>`).join('')}</div>
  <div class="section-title">NOTAS LATERAIS (${notes.length})</div><p class="small-note">Notas são anexadas a este bloco sem virar novos nós nem conexões.</p>
@@ -161,6 +194,60 @@ function renderInspector(){const r=reflect(),n=node(selectedId);if(!r||!n)return
  <div class="section-title">CONEXÕES (${incomings.length} entrada(s), ${outgoings.length} saída(s))</div><div class="small-note">${outgoings.map(e=>`<div style="margin-bottom:8px">${safeText(RELATIONS[e.relation])} → ${safeText(labelOf(node(e.target)||{title:'Bloco ausente'}))}</div>`).join('')||'Nenhuma conexão de saída.'}</div>
  <div class="inspector-footer"><button class="secondary small" data-inspector="challenge">✦ Desafiar pensamento</button><button class="secondary small danger-outline" data-inspector="delete">✕ Excluir</button></div></div>`;
 }
+function markFallacy(existingId=null){const n=node(selectedId);if(!n)return;const old=n.fallacies?.find(f=>f.id===existingId);
+ const choices=Object.entries(FALLACIES).map(([key,v])=>[key,v[0]]);
+ openModal(old?'Revisar possível falácia':'Marcar possível falácia',`<p class="small-note">Isto registra uma <b>suspeita sua</b>; não confirma que houve uma falácia. No prompt de IA, a marcação será examinada criticamente.</p><form id="fallacyForm">${selectField('key','Possível falácia',choices,old?.key||'espantalho')}<div id="fallacyMeaning" class="term-definition"></div>${selectField('status','Situação da marcação',Object.entries(FALLACY_STATUSES),old?.status||'suspeita')}${field('note','Por que você suspeita disso? (opcional)',old?.note||'','textarea',false,'maxlength="4000" rows="3"')}<div class="modal-actions">${old?'<button type="button" class="secondary danger-outline" id="removeFallacy">Remover</button>':'<button type="button" class="secondary" data-close-modal>Cancelar</button>'}<button type="submit" class="primary">Salvar marcação</button></div></form>`,el=>{
+ const form=el.querySelector('#fallacyForm'),select=form.elements.key,meaning=el.querySelector('#fallacyMeaning');const explain=()=>meaning.textContent=FALLACIES[select.value]?.[1]||'';select.addEventListener('change',explain);explain();
+ form.onsubmit=e=>{e.preventDefault();const d=new FormData(form);mutation(()=>{n.fallacies||=[];if(old){old.key=d.get('key');old.status=d.get('status');old.note=String(d.get('note')||'').trim();}else n.fallacies.push({id:uid('fallacy'),key:d.get('key'),status:d.get('status'),note:String(d.get('note')||'').trim(),createdAt:now()});n.updatedAt=now();});closeModal();toast('Marcação registrada para revisão posterior.');};
+ if(old)el.querySelector('#removeFallacy').onclick=()=>{mutation(()=>{n.fallacies=n.fallacies.filter(x=>x.id!==old.id);});closeModal();toast('Marcação removida.');};
+ });
+}
+function updateNavigator(){const r=reflect();if(!r)return;const a=$('navigateBack'),b=$('navigateForward'),label=$('navigationLabel');
+ if(!a||!b)return;const previous=selectedId?neighbours(r,selectedId,'back'):[],next=selectedId?neighbours(r,selectedId,'next'):[];
+ a.disabled=!previous.length;b.disabled=!next.length;label.textContent=selectedId?`${previous.length} anterior(es) · ${next.length} próximo(s)`:'Selecione um bloco';
+}
+function navigate(direction){const r=reflect();if(!r||view!=='map')return;if(!selectedId){const id=r.nodes.find(n=>n.title==='Pergunta principal')?.id||r.nodes[0]?.id;if(id)focusNode(id);return;}
+ const candidates=neighbours(r,selectedId,direction==='back'?'back':'next');if(!candidates.length){toast(direction==='back'?'Sem ligação anterior.':'Este caminho não possui próxima ligação.');return;}
+ const remembered=direction==='back'&&navHistory.length&&navHistory.at(-1).to===selectedId?navHistory.at(-1):null;
+ if(remembered&&candidates.some(c=>c.node.id===remembered.from)){navHistory.pop();focusNode(remembered.from);return;}
+ const follow=entry=>{if(direction==='next')navHistory.push({from:selectedId,to:entry.node.id});else navHistory=[];focusNode(entry.node.id);};
+ if(candidates.length===1){follow(candidates[0]);return;}
+ const title=direction==='next'?'Qual ramificação seguir?':'De qual pensamento voltar?';
+ openModal(title,`<p class="small-note">Há ${candidates.length} conexões. Escolha o caminho correto; nenhuma ligação será apagada.</p><div class="route-choices">${candidates.map((c,i)=>`<button type="button" class="route-choice" data-route-index="${i}"><b>${i+1}. ${safeText(labelOf(c.node))}</b><small>${safeText(RELATIONS[c.edge.relation]||c.edge.relation)} · ${safeText(TYPES[c.node.type]?.[0])}</small></button>`).join('')}</div>`,el=>el.querySelectorAll('[data-route-index]').forEach(btn=>btn.onclick=()=>{const entry=candidates[Number(btn.dataset.routeIndex)];closeModal();follow(entry);}),{wide:false});
+}
+function showGapSuggestions(){const r=reflect();if(!r)return;const gaps=suspectedGaps(r);
+ if(!gaps.length){openModal('Pausas possíveis',`<p>Não encontrei conexões diretas com intervalo de pelo menos <b>1 hora</b> entre as criações dos blocos.</p><p class="small-note">Isso não significa que não houve pausas; a análise não observa atividades fora do app.</p><div class="modal-actions"><button class="primary" data-close-modal>Entendi</button></div>`);return;}
+ const content=gaps.map(g=>`<div class="gap-row"><b>${safeText(labelOf(g.source))}</b> → <b>${safeText(labelOf(g.target))}</b><p class="small-note">Intervalo: ${formatDuration(g.gap)} · ${safeText(niceDate(g.source.createdAt))} até ${safeText(niceDate(g.target.createdAt))}</p><button class="secondary small" data-insert-gap="${safeText(g.edgeId)}">Inserir marcador neste caminho</button></div>`).join('');
+ openModal('Possíveis pausas não registradas',`<p class="small-note">Encontrei ${gaps.length} conexão(ões) separadas por ≥ 1h. <b>Intervalo entre criações não comprova pausa.</b> Só será inserido um marcador mediante confirmação.</p><div class="batch-list">${content}</div><div class="modal-actions"><button class="primary" data-close-modal>Fechar</button></div>`,el=>el.querySelectorAll('[data-insert-gap]').forEach(btn=>btn.onclick=()=>{
+ const edgeId=btn.dataset.insertGap,g=gaps.find(item=>item.edgeId===edgeId);if(!g||!reflect().edges.some(e=>e.id===edgeId))return toast('A conexão não está mais disponível.');
+ if(!confirm(`Inserir marcador de pausa POSSÍVEL entre esses dois blocos? O link existente será dividido em dois links; você poderá desfazer.`))return;
+ const ts=now();let pauseId;mutation(()=>{const r=reflect(),edge=r.edges.find(e=>e.id===edgeId);if(!edge)return;pauseId=uid('node');const x=(g.source.x+g.target.x)/2,y=(g.source.y+g.target.y)/2+160;
+ r.nodes.push({id:pauseId,type:'pausa',title:'Possível pausa não registrada',content:`Intervalo de ${formatDuration(g.gap)} entre criações. Este marcador foi inserido depois e não confirma uma interrupção.`,notes:'Adicionado manualmente após sugestão baseada em datas.',classification:'',state:'ativo',voiceId:r.voices.find(v=>v.id==='observador')?.id||r.voices[0].id,x,y,annotations:[],fallacies:[],collapsed:false,createdAt:ts,updatedAt:ts,suggestedGap:{from:g.source.createdAt,to:g.target.createdAt,durationMs:g.gap}});
+ r.edges=r.edges.filter(e=>e.id!==edgeId);r.edges.push({id:uid('edge'),source:g.source.id,target:pauseId,relation:'continua',createdAt:ts},{id:uid('edge'),source:pauseId,target:g.target.id,relation:edge.relation,createdAt:ts});
+ });closeModal();focusNode(pauseId);toast('Marcador de pausa possível inserido. Use Ctrl+Z para desfazer.');
+ }),{wide:true});
+}
+function showReport(){const r=reflect();if(!r)return;trackTick();const m=metricsFor(r);
+ const list=obj=>Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([a,b])=>`<div class="stat-line"><span>${safeText(a)}</span><b>${b}</b></div>`).join('')||'<span class="small-note">Nenhum registro.</span>';
+ openModal('◎ Relatório do debate',`<div class="report-head"><span class="status-pill">${m.isComplete?'Concluído':'Em andamento — parcial'}</span><p>${safeText(r.question)}</p><p class="small-note">Primeiro bloco: ${safeText(niceDate(m.firstAt))} · ${m.isComplete?'Concluído':'Último marco'}: ${safeText(niceDate(m.lastAt))}</p></div><div class="report-kpis"><div><strong>${m.totalNodes}</strong><span>Blocos</span></div><div><strong>${m.totalEdges}</strong><span>Conexões</span></div><div><strong>${m.sessionCount}</strong><span>Sessões</span></div><div><strong>${m.allFallacies.length}</strong><span>Marcações</span></div></div>
+ <div class="report-time"><b>◷ Tempo ativo estimado: ${formatDuration(m.totalMs)}</b><p>Intervalo de calendário: ${formatDuration(m.calendarMs)} (inclui períodos fora do aplicativo).</p><p class="small-note">A contagem ativa para quando o app fica oculto ou após 5 minutos sem interação. Não mede seus pensamentos fora da tela nem determina quanto você levou para formular cada argumento.</p></div>
+ <div class="report-columns"><section><h3>Tipos de pensamento</h3>${list(m.byType)}</section><section><h3>Vozes</h3>${list(m.byVoice)}</section><section><h3>Relações</h3>${list(m.byRelation)}</section><section><h3>Marcações de falácias</h3>${list(m.fallaciesByStatus)}</section></div>
+ <h3>Registro de sessões</h3><div class="session-ledger">${(r.sessions||[]).slice(-25).map((ss,i)=>`<div class="stat-line"><span>Sessão ${(r.sessions||[]).length-Math.min(25,(r.sessions||[]).length)+i+1} · ${safeText(niceDate(ss.startedAt))} → ${safeText(niceDate(ss.endedAt))}</span><b>${formatDuration(ss.activeMs)}</b></div>`).join('')||'<p class="small-note">Nenhuma sessão registrada nesta versão.</p>'}</div><p class="small-note">Até 25 sessões mais recentes nesta visualização; o relatório exportado inclui todas as sessões preservadas.</p>
+ <h3>Pausas registradas</h3><div class="session-ledger">${r.nodes.filter(n=>n.type==='pausa').sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt))).slice(-20).map(n=>`<div class="stat-line"><span>${safeText(n.title||'Pausa')} · ${safeText(niceDate(n.createdAt))}</span><b>${n.suggestedGap?'Sugerida':'Registrada'}</b></div>`).join('')||'<span class="small-note">Nenhuma pausa marcada.</span>'}</div>
+ <h3>Tempo por cenário (estimativa de atenção)</h3><p class="small-note">Distribuído pelo cenário associado ao bloco selecionado enquanto o app estava ativo; não mede todo o tempo gasto pensando em cada cenário e não garante exclusividade entre caminhos.</p>
+ <div class="report-scenarios">${m.branches.map(b=>`<div class="stat-line"><span>${safeText(b.title)}</span><b>${formatDuration(b.activeMs)}</b></div>`).join('')||'<span class="small-note">Sem ramificações.</span>'}<div class="stat-line"><span>Sem cenário identificado</span><b>${formatDuration(m.unassignedMs)}</b></div></div>
+ <div class="modal-actions"><button type="button" class="secondary" id="saveReportMd">↓ Baixar relatório</button><button type="button" class="secondary" id="copyChessReport">♟ Copiar prompt de xadrez</button><button type="button" class="primary" data-close-modal>Fechar</button></div>`,el=>{
+ el.querySelector('#saveReportMd').onclick=()=>downloadText(`${cleanFilename(r.title)}-relatorio.md`,reportMarkdown(r),'text/markdown;charset=utf-8');
+ el.querySelector('#copyChessReport').onclick=()=>navigator.clipboard.writeText(chessPromptFor(r)).then(()=>toast('Prompt de xadrez copiado.')).catch(()=>{toast('Não foi possível acessar a área de transferência. Use Exportar → Prompt de xadrez.');});
+ },{wide:true});
+}
+function finishReflection(){const r=reflect();if(!r)return;if(!confirm('Marcar este debate como concluído? Você poderá reabri-lo depois; o relatório ficará disponível.'))return;
+ stopTracking();mutation(()=>{r.status='concluído';r.completedAt=now();});showReport();toast('Debate concluído. Relatório atualizado.');
+}
+function copyChessPrompt(){const r=reflect();if(!r)return;const text=chessPromptFor(r);openModal('♟ Prompt de xadrez',`<p class="small-note">Metáfora narrativa; não é uma partida real nem valida automaticamente os argumentos. Copie manualmente para uma IA de sua escolha.</p><textarea id="chessText" rows="12" readonly>${safeText(text)}</textarea><div class="modal-actions"><button class="secondary" id="downloadChessText">↓ Salvar .txt</button><button class="primary" id="copyChessText">Copiar prompt</button></div>`,el=>{
+ el.querySelector('#copyChessText').onclick=()=>navigator.clipboard.writeText(text).then(()=>toast('Prompt de xadrez copiado.')).catch(()=>{el.querySelector('#chessText').select();toast('Selecione e copie o texto manualmente.');});
+ el.querySelector('#downloadChessText').onclick=()=>downloadText(`${cleanFilename(r.title)}-xadrez.txt`,text);
+ },{wide:true});}
 function addMarginNote(){const n=node(selectedId);if(!n)return;
  formModal('Nota lateral',`<p class="small-note">Uma observação associada ao bloco, sem alterar o mapa.</p>${field('text','Anotação','', 'textarea',true,'autofocus maxlength="6000" rows="4"')}`,'Anexar nota',data=>{
  const text=String(data.get('text')||'').trim();if(!text)return false;
@@ -171,7 +258,19 @@ function removeMarginNote(id){const n=node(selectedId);if(!n||!n.annotations?.so
  mutation(()=>{n.annotations=n.annotations.filter(a=>a.id!==id);n.updatedAt=now();});toast('Nota removida.');}
 function pauseReflection(){const r=reflect();if(!r)return;
  openNodeEditor(null,{type:'pausa',parentId:selectedId||undefined,voiceId:r.voices.find(v=>v.id==='observador')?.id||r.voices[0].id,markPaused:true,content:'Parei aqui. Ao voltar, preciso retomar: '});}
-function resumeReflection(){const r=reflect();if(!r)return;mutation(()=>{r.status='em andamento';});const last=[...r.nodes].filter(n=>n.type==='pausa').sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))[0];if(last)focusNode(last.id);toast('Reflexão retomada. Continue a partir do marcador.');}
+function resumeReflection(fromId=null){const r=reflect();if(!r)return;
+ const marker=fromId?node(fromId):[...r.nodes].filter(n=>n.type==='pausa').sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+ const target=marker||[...r.nodes].sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+ if(!target){toast('Crie um pensamento para começar.');return;}
+ const rec=pathRecap(r,target.id),last=r.sessions?.at(-1),lastAt=last?.endedAt||target.createdAt;
+ const lines=rec.lines.map((line,i)=>`<div class="recap-line"><b>${safeText(line.voice)}</b><span class="small-note">${safeText(TYPES[line.type]?.[0]||line.type)}</span><p>${safeText(line.text.slice(0,350))}</p></div>`).join('');
+ openModal('Retomar o fio do raciocínio',`<p class="small-note">Última sessão ou pausa: ${safeText(niceDate(lastAt))}. ${rec.truncated?'Mostrando as últimas etapas do caminho.':'Caminho desde a pergunta principal.'}</p><div class="recap-list">${lines}</div><p class="small-note">Este resumo é feito pelos próprios blocos e conexões; não é uma interpretação automática das suas ideias.</p><div class="modal-actions"><button class="secondary" data-close-modal>Agora não</button><button id="confirmResume" class="primary">↗ Retomar e destacar caminho</button></div>`,el=>{
+ el.querySelector('#confirmResume').onclick=()=>{closeModal();if(r.status!=='em andamento')mutation(()=>{r.status='em andamento';r.completedAt=null;});startTracking();highlightPath(rec.path);focusNode(target.id);toast('Caminho destacado por 45 segundos. Continue quando quiser.');};
+ },{wide:true});
+}
+function clearJourneyHighlight(){clearTimeout(journeyTimer);journeyTimer=null;journeyNodes=new Set();journeyEdges=new Set();if($('journeyBanner'))$('journeyBanner').classList.add('hidden');if(activeId&&view==='map')renderGraph();}
+function highlightPath(path){clearJourneyHighlight();journeyNodes=new Set(path.map(p=>p.id));journeyEdges=new Set(path.map(p=>p.edgeId).filter(Boolean));$('journeyBanner').classList.remove('hidden');renderGraph();journeyTimer=setTimeout(clearJourneyHighlight,45000);}
+
 function renderHistory(){const r=reflect();if(!r)return;const arr=[...r.nodes].sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt)));
  $('historyList').innerHTML=arr.length?arr.map((n,i)=>{const v=voice(n.voiceId),links=r.edges.filter(e=>e.source===n.id);
  return `<article class="history-item"><div class="meta">${i+1} · ${niceDate(n.createdAt)} · ${safeText(TYPES[n.type]?.[0]||n.type)} · ${safeText(v?.name||'Sem voz')} · ${safeText(STATES[n.state])}</div><h3>${safeText(labelOf(n))}</h3><p>${safeText(n.content)}</p>${n.notes?`<p><i>Observações: ${safeText(n.notes)}</i></p>`:''}${n.annotations?.length?`<div class="history-notes">${n.annotations.map(a=>`<p>◫ Nota: ${safeText(a.text)}</p>`).join('')}</div>`:''}<div class="links">${links.map(e=>`${safeText(RELATIONS[e.relation])} → ${safeText(labelOf(node(e.target)||{title:'Bloco ausente'}))}`).join(' · ')||'Nenhuma saída'}</div><button data-jump="${safeText(n.id)}">Ver no mapa →</button></article>`;}).join(''):'<p>Histórico vazio. Crie o primeiro pensamento.</p>';
@@ -217,7 +316,8 @@ function openNodeEditor(existingId=null,config={}){const r=reflect();if(!r)retur
  if(config.returnToRoot&&r.nodes[0]?.id!==id)r.edges.push({id:uid('edge'),source:id,target:r.nodes[0].id,relation:'retorna',createdAt:ts});
  if(config.markPaused)r.status='pausado';}
  });
- closeModal();focusNode(id);if(isMobile())$('inspector').classList.add('hidden');toast(existing?'Pensamento atualizado.':config.markPaused?'Pausa registrada. A reflexão foi marcada como pausada.':'Pensamento adicionado.');
+ closeModal();if(!existingId)clearJourneyHighlight();if(config.markPaused)stopTracking();focusNode(id);if(isMobile())$('inspector').classList.add('hidden');toast(existing?'Pensamento atualizado.':config.markPaused?'Pausa registrada. A reflexão foi marcada como pausada.':'Pensamento adicionado.');
+ if(!existingId&&parent&&Date.parse(ts)-Date.parse(parent.createdAt)>=60*60000)toast('Possível pausa de mais de 1 hora neste caminho. Veja Organizar → Procurar pausas.',{duration:6500});
  });
  setupDefinitionFields();refresh();
  });}
@@ -320,13 +420,15 @@ function voiceForm(id,done){const r=reflect(),v=id?voice(id):null;
  const name=data.get('name').trim();if(!name)return false;
  mutation(()=>{if(v){v.name=name;v.color=data.get('color');}else r.voices.push({id:uid('voice'),name,color:data.get('color')});});
  queueMicrotask(done);return true;});}
-function exportModal(){if(!reflect())return;const opts=[['md','☷','Texto estruturado (.md)','Argumentos, vozes, conexões e ordem cronológica'],['svg','◇','Mapa em SVG','Imagem vetorial do mapa inteiro, sem cortes'],['png','▧','Mapa em PNG','Imagem PNG com todos os blocos e conexões'],['json','{}','Backup completo (.json)','Dados, posições, vozes e configurações da biblioteca'],['ai','✦','Prompt para inteligência artificial','Copiar perguntas de análise crítica com o mapa completo']];
+function exportModal(){if(!reflect())return;const opts=[['md','☷','Texto estruturado (.md)','Argumentos, vozes, conexões e ordem cronológica'],['svg','◇','Mapa em SVG','Imagem vetorial do mapa inteiro, sem cortes'],['png','▧','Mapa em PNG','Imagem PNG com todos os blocos e conexões'],['json','{}','Backup completo (.json)','Dados, posições, vozes e configurações da biblioteca'],['ai','✦','Prompt para inteligência artificial','Copiar análise crítica incluindo falácias marcadas'],['chess','♟','Prompt de xadrez de argumentos','Copiar instruções para converter o debate em partida narrativa'],['report','◷','Relatório final ou parcial (.md)','Métricas, sessões, tipos e possíveis falácias']];
  openModal('Exportar reflexão',`<p class="small-note">Apenas quando você escolher exportar ou copiar haverá uma cópia dos dados fora do armazenamento local.</p>${opts.map(([a,ic,name,desc])=>`<button class="export-option" data-export="${a}"><span class="symbol">${ic}</span><span><b>${name}</b><small>${desc}</small></span></button>`).join('')}`,el=>el.querySelectorAll('[data-export]').forEach(b=>b.onclick=async()=>{
  const type=b.dataset.export,r=reflect();try{
  if(type==='md')downloadText(`${cleanFilename(r.title)}.md`,markdownFor(r),'text/markdown;charset=utf-8');
  else if(type==='svg'||type==='png')await downloadSvgOrPng(r,type);
  else if(type==='json')downloadText(`contraponto-backup-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(app,null,2),'application/json;charset=utf-8');
  else if(type==='ai'){await copyText(promptFor(r));toast('Prompt e raciocínio copiados. Cole onde desejar.');closeModal();return;}
+ else if(type==='chess'){closeModal();copyChessPrompt();return;}
+ else if(type==='report')downloadText(`${cleanFilename(r.title)}-relatorio.md`,reportMarkdown(r),'text/markdown;charset=utf-8');
  toast('Exportação iniciada.');closeModal();}catch(err){console.error(err);toast(err.message||'Não foi possível exportar.');}
  }));}
 async function copyText(str){if(navigator.clipboard&&isSecureContext)return navigator.clipboard.writeText(str);
@@ -336,10 +438,10 @@ async function receiveImport(file){if(!file)return;if(file.size>15*1024*1024)ret
  try{const raw=JSON.parse(await file.text());refs=normalizeImported(raw);if(raw.settings&&typeof raw.settings==='object')importedSettings={theme:raw.settings.theme==='light'?'light':'dark'};}catch(e){console.error(e);return toast(e.message||'JSON inválido.');}
  openModal('Importar backup',`<p>Encontradas <b>${refs.length}</b> reflexões no arquivo.</p><p class="small-note">Ao adicionar, as reflexões existentes são preservadas. Ao substituir, a biblioteca atual será apagada e receberá o conteúdo importado.</p><div class="modal-actions"><button class="secondary" data-close-modal>Cancelar</button><button class="secondary" id="importReplace">Substituir biblioteca</button><button class="primary" id="importAppend">Adicionar reflexões</button></div>`,el=>{
  el.querySelector('#importReplace').onclick=()=>{if(!confirm('Substituir TODA a biblioteca local por este backup? Isso não pode ser desfeito sem outro backup.'))return;
- app.reflections=refs;if(importedSettings){app.settings=importedSettings;applyTheme();}activeId=null;selectedId=null;closeModal();persist();renderLibrary();toast('Biblioteca restaurada.');};
+ stopTracking();app.reflections=refs;if(importedSettings){app.settings=importedSettings;applyTheme();}activeId=null;selectedId=null;closeModal();persist();renderLibrary();toast('Biblioteca restaurada.');};
  el.querySelector('#importAppend').onclick=()=>{
  const imported=clone(refs),exists=new Set(app.reflections.map(r=>r.id));for(const r of imported){if(exists.has(r.id)){r.id=uid('reflection');}exists.add(r.id);}
- app.reflections.push(...imported);activeId=null;selectedId=null;closeModal();persist();renderLibrary();toast(`${imported.length} reflexão(ões) importada(s).`);};
+ stopTracking();app.reflections.push(...imported);activeId=null;selectedId=null;closeModal();persist();renderLibrary();toast(`${imported.length} reflexão(ões) importada(s).`);};
  });}
 
 let graphDrag=null,panDrag=null;
@@ -357,7 +459,7 @@ function wireGraph(){const viewport=$('graphViewport'),nodes=$('graphNodes'),edg
  nodes.addEventListener('pointerup',endDrag);nodes.addEventListener('pointercancel',endDrag);
  nodes.addEventListener('dblclick',e=>{const el=e.target.closest('[data-node]');if(!el)return;if(e.target.closest('.collapse-indicator'))return toggleCollapse(el.dataset.node);openNodeEditor(el.dataset.node);});
  edges.addEventListener('click',e=>{const id=e.target.dataset.edge;if(id){e.stopPropagation();editEdge(id);}});
- viewport.addEventListener('pointerdown',e=>{if(e.button>0||e.target.closest('.thought-node')||e.target.closest('.edge-hit'))return;
+ viewport.addEventListener('pointerdown',e=>{if(e.button>0||e.target.closest('.thought-node')||e.target.closest('.edge-hit')||e.target.closest('button, .journey-banner, .path-navigator'))return;
  panDrag={pointer:e.pointerId,startX:e.clientX,startY:e.clientY,origX:pan.x,origY:pan.y};viewport.setPointerCapture(e.pointerId);viewport.classList.add('panning');if(selectedId){selectedId=null;renderGraph();$('inspector').classList.add('hidden');}});
  viewport.addEventListener('pointermove',e=>{if(!panDrag||e.pointerId!==panDrag.pointer)return;pan.x=panDrag.origX+(e.clientX-panDrag.startX);pan.y=panDrag.origY+(e.clientY-panDrag.startY);updateTransform();drawMini();});
  const endPan=e=>{if(panDrag?.pointer===e.pointerId){panDrag=null;viewport.classList.remove('panning');}};
@@ -369,7 +471,10 @@ function wireGraph(){const viewport=$('graphViewport'),nodes=$('graphNodes'),edg
 function wireEvents(){
  $('brandBtn').onclick=goHome;$('backHome').onclick=goHome;$('themeBtn').onclick=()=>{app.settings.theme=app.settings.theme==='dark'?'light':'dark';applyTheme();persist();};
  $('globalImport').onclick=importJson;$('globalGlossary').onclick=glossaryModal;$('glossarySidebar').onclick=glossaryModal;
- $('pauseSession').onclick=pauseReflection;$('resumeSession').onclick=resumeReflection;$('jsonFileInput').onchange=e=>receiveImport(e.target.files?.[0]);
+ $('pauseSession').onclick=pauseReflection;$('resumeSession').onclick=()=>resumeReflection();
+ $('reportBtn').onclick=showReport;$('reportSidebar').onclick=showReport;$('historyReport').onclick=showReport;
+ $('chessPromptBtn').onclick=copyChessPrompt;$('finishBtn').onclick=finishReflection;$('gapSuggestionsBtn').onclick=showGapSuggestions;
+ $('navigateBack').onclick=()=>navigate('back');$('navigateForward').onclick=()=>navigate('next');$('clearJourney').onclick=clearJourneyHighlight;$('jsonFileInput').onchange=e=>receiveImport(e.target.files?.[0]);
  $('newReflection').onclick=()=>editReflection();$('openDemo').onclick=()=>{const demo=app.reflections.find(r=>r.tags.includes('demonstração'));if(demo)return openReflection(demo.id);
  const r=makeDemo();app.reflections.unshift(r);persist();openReflection(r.id);};
  $('searchReflection').oninput=renderLibrary;$('libraryFilter').onchange=renderLibrary;
@@ -390,10 +495,10 @@ function wireEvents(){
  $('layoutBtn').onclick=autoLayout;$('batchClassifyBtn').onclick=batchClassify;$('zoomIn').onclick=()=>setZoom(zoom*1.2);$('zoomOut').onclick=()=>setZoom(zoom/1.2);
  $('connectToolbar').onclick=()=>connectModal();$('emphasisToggle').onchange=e=>{showMainline=e.target.checked;renderEdges();};
  $('undoBtn').onclick=undoAction;$('redoBtn').onclick=redoAction;
- $('inspectorContent').onclick=e=>{const noteId=e.target.closest('[data-remove-note]')?.dataset.removeNote;if(noteId)return removeMarginNote(noteId);const q=e.target.closest('[data-quick]')?.dataset.quick;if(q)return quick(q);
+ $('inspectorContent').onclick=e=>{const noteId=e.target.closest('[data-remove-note]')?.dataset.removeNote;if(noteId)return removeMarginNote(noteId);const fallacyId=e.target.closest('[data-edit-fallacy]')?.dataset.editFallacy;if(fallacyId)return markFallacy(fallacyId);const q=e.target.closest('[data-quick]')?.dataset.quick;if(q)return quick(q);
  const action=e.target.closest('[data-inspector]')?.dataset.inspector;if(action==='edit')openNodeEditor(selectedId);if(action==='connect')connectModal();
  if(action==='challenge')challenge();if(action==='collapse')toggleCollapse(selectedId);if(action==='delete')removeNode();
- if(action==='addNote')addMarginNote();if(action==='dictionary')glossaryModal();if(action==='resumeFrom'){const id=selectedId;if(reflect()?.status==='pausado')mutation(()=>reflect().status='em andamento');openNodeEditor(null,{type:'comentario',parentId:id});}};
+ if(action==='addNote')addMarginNote();if(action==='addFallacy')markFallacy();if(action==='dictionary')glossaryModal();if(action==='resumeFrom')resumeReflection(selectedId);};
  $('closeInspector').onclick=()=>{selectedId=null;renderWorkspace();};
  $('historyList').onclick=e=>{const jump=e.target.closest('[data-jump]')?.dataset.jump;if(jump)focusNode(jump);};
  $('closeModal').onclick=closeModal;$('modal').onclick=e=>{if(e.target===$('modal')||e.target.closest('[data-close-modal]'))closeModal();};
@@ -402,15 +507,20 @@ function wireEvents(){
  if(!$('modal').classList.contains('hidden')||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||!activeId)return;
  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'){e.preventDefault();undoAction();}
  else if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){e.preventDefault();redoAction();}
+ else if(!e.ctrlKey&&!e.altKey&&!e.metaKey&&['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();navigate(e.key==='ArrowLeft'?'back':'next');}
  else if(!e.ctrlKey&&!e.altKey&&!e.metaKey&&e.key.toLowerCase()==='n'){e.preventDefault();openNodeEditor(null,selectedId?{parentId:selectedId}:{});}
  else if(['Delete','Backspace'].includes(e.key)&&selectedId){e.preventDefault();removeNode();}
  });
  window.addEventListener('resize',()=>{if(activeId&&view==='map')drawMini();});
- document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&saveTimer){clearTimeout(saveTimer);writeApp(app).catch(console.error);}});
+ const activityEvents=['pointerdown','keydown','wheel'];for(const name of activityEvents)document.addEventListener(name,activity,{passive:true});
+ trackingTimer=setInterval(()=>{if(tracker){trackTick();if(tracker)persist();}},15000);
+ window.addEventListener('pagehide',stopTracking);
+ window.addEventListener('focus',()=>{if(activeId)startTracking();});
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){stopTracking();if(saveTimer){clearTimeout(saveTimer);writeApp(app).catch(console.error);}}else if(activeId)startTracking();});
  wireGraph();
 }
 function applyTheme(){document.body.dataset.theme=app.settings.theme==='light'?'light':'dark';document.querySelector('meta[name="theme-color"]').content=app.settings.theme==='light'?'#f1f4fa':'#0b1220';}
-async function boot(){try{app=await readApp();if(!app) {app=initialData();await writeApp(app);}if(!Array.isArray(app.reflections))throw Error('Dados locais inválidos.');app.settings||={theme:'dark'};app.reflections=normalizeImported({reflections:app.reflections});app.schemaVersion=2;}
+async function boot(){try{app=await readApp();if(!app) {app=initialData();await writeApp(app);}if(!Array.isArray(app.reflections))throw Error('Dados locais inválidos.');app.settings||={theme:'dark'};app.reflections=normalizeImported({reflections:app.reflections});app.schemaVersion=3;}
  catch(e){console.error('Erro ao carregar',e);if(confirm('Não foi possível ler os dados locais. Deseja abrir com uma biblioteca temporária? Não será apagado nenhum backup externo.'))app=initialData();else {document.body.innerHTML='<main style="font:16px sans-serif;padding:32px">Não foi possível acessar o armazenamento local. Habilite IndexedDB no navegador e recarregue.</main>';return;}}
  applyTheme();wireEvents();renderLibrary();
  if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('Offline indisponível:',err));

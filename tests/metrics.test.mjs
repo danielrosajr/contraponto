@@ -1,0 +1,13 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {newReflection,normalizeImported} from '../src/model.js';
+import {metricsFor,reportMarkdown} from '../src/metrics.js';
+import {markdownFor,promptFor} from '../src/export.js';
+import {chessPromptFor} from '../src/chess.js';
+const r=newReflection('Debate exemplo','Eu estou certo?');
+r.nodes[0].fallacies=[{id:'f',key:'espantalho',status:'suspeita',note:'Talvez distorci a premissa.',createdAt:'2026-10-22T11:00:00.000Z'}];
+r.sessions=[{id:'s',startedAt:'2026-10-22T11:00:00.000Z',endedAt:'2026-10-22T11:02:00.000Z',activeMs:120000,focusMs:{}}];
+test('relatório contabiliza blocos, marcações e tempo ativo sem confundir com calendário',()=>{const m=metricsFor(r);assert.equal(m.totalNodes,1);assert.equal(m.allFallacies.length,1);assert.equal(m.totalMs,120000);assert.equal(m.sessionCount,1);assert.match(reportMarkdown(r),/Tempo ativo/);assert.match(reportMarkdown(r),/2min/);});
+test('marcação de falácia aparece na exportação e IA recebe instrução de revisar marcações',()=>{const md=markdownFor(r);assert.match(md,/Espantalho/);assert.match(md,/Talvez distorci/);assert.match(promptFor(r),/CADA marcação/);});
+test('xadrez usa metáfora, pede jogadas legais e inclui ID e premissas do mapa',()=>{const chess=chessPromptFor(r);assert.match(chess,/LEGAIS/);assert.match(chess,/PGN falso/);assert.match(chess,/Eu estou certo/);assert.match(chess,/Espantalho/);});
+test('backup mantém marcações, sessões e tempo associado',()=>{const clone=normalizeImported({reflections:[r]})[0];assert.equal(clone.nodes[0].fallacies[0].key,'espantalho');assert.equal(clone.sessions[0].activeMs,120000);assert.equal(clone.sessions[0].focusMs&&Object.keys(clone.sessions[0].focusMs).length,0);});
+test('etiquetas de falácias inválidas não quebram a importação',()=>{const c=structuredClone(r);c.nodes[0].fallacies.push({id:'bad',key:'sabe_tudo',status:'oficial'});const n=normalizeImported(c)[0];assert.equal(n.nodes[0].fallacies.length,1);});

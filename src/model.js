@@ -1,3 +1,4 @@
+import {validFallacies} from './fallacies.js';
 export const TYPES = {
   pergunta: ['Pergunta','?','#70b9ff'], premissa: ['Premissa','◈','#bca8ff'], argumento: ['Argumento','↗','#80cba8'],
   objecao: ['Objeção','!','#fa9b8c'], contra: ['Contra-argumento','↩','#8dc9d2'], exemplo: ['Exemplo','▦','#e6bb7f'],
@@ -37,7 +38,7 @@ export const defaultVoices = () => [
 export function newReflection(title,question,description='',tags=[]) {
   const ts=now(); const id=uid('reflection');
   return {id,title:title.trim(),question:question.trim(),description:description.trim(),status:'em andamento',archived:false,tags,
-    createdAt:ts,updatedAt:ts,voices:defaultVoices(),nodes:[{id:uid('node'),type:'pergunta',title:'Pergunta principal',content:question.trim(),notes:'',classification:'',state:'ativo',voiceId:'eu1',x:0,y:0,collapsed:false,createdAt:ts,updatedAt:ts}],edges:[]};
+    createdAt:ts,updatedAt:ts,completedAt:null,sessions:[],voices:defaultVoices(),nodes:[{id:uid('node'),type:'pergunta',title:'Pergunta principal',content:question.trim(),notes:'',classification:'',state:'ativo',voiceId:'eu1',x:0,y:0,collapsed:false,createdAt:ts,updatedAt:ts}],edges:[]};
 }
 export function makeDemo() {
   const r = newReflection('O que significa ser afetado pelo desconhecido?', 'O que significa dizer que algo não me afeta se eu desconheço sua existência?',
@@ -66,7 +67,7 @@ export function makeDemo() {
   r.nodes[11].annotations=[{id:uid('note'),text:'Esta observação não precisa virar outro argumento. É apenas uma nota anexada ao bloco.',createdAt:ts}];
   return r;
 }
-export function initialData() { return {schemaVersion:2,settings:{theme:'dark'},reflections:[makeDemo()]}; }
+export function initialData() { return {schemaVersion:3,settings:{theme:'dark'},reflections:[makeDemo()]}; }
 export function safeText(s) {return String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');}
 export function niceDate(iso) { return iso ? new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(iso)) : '—'; }
 export function cleanFilename(s){return String(s||'reflexao').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-|-$/g,'').toLowerCase().slice(0,65) || 'reflexao';}
@@ -86,7 +87,7 @@ export function normalizeImported(obj) {
         voiceId:String(n.voiceId||'eu1'),x:Number.isFinite(n.x)?Math.max(-100000,Math.min(100000,n.x)):0,
         y:Number.isFinite(n.y)?Math.max(-100000,Math.min(100000,n.y)):0,
         annotations:Array.isArray(n.annotations)?n.annotations.slice(0,100).map(a=>({id:String(a?.id||uid('note')).slice(0,130),text:String(a?.text||'').slice(0,6000),createdAt:a?.createdAt||now()})).filter(a=>a.text.trim()):[],
-        collapsed:!!n.collapsed,createdAt:n.createdAt||now(),updatedAt:n.updatedAt||now()});
+        fallacies:validFallacies(n.fallacies),suggestedGap:n.suggestedGap&&typeof n.suggestedGap==='object'?{from:String(n.suggestedGap.from||''),to:String(n.suggestedGap.to||''),durationMs:Number(n.suggestedGap.durationMs)||0}:null,collapsed:!!n.collapsed,createdAt:n.createdAt||now(),updatedAt:n.updatedAt||now()});
     }
     const edges=r.edges.filter(e=>e && unique.has(e.source) && unique.has(e.target) && e.source!==e.target).map(e=>({
       id:typeof e.id==='string'?e.id:uid('edge'),source:e.source,target:e.target,relation:RELATIONS[e.relation]?e.relation:'continua',createdAt:e.createdAt||now()
@@ -96,7 +97,7 @@ export function normalizeImported(obj) {
       question:String(r.question||'').slice(0,10000),description:String(r.description||'').slice(0,20000),
       status:['em andamento','pausado','concluído'].includes(r.status)?r.status:'em andamento',archived:!!r.archived,
       tags:Array.isArray(r.tags)?r.tags.slice(0,20).map(t=>String(t).slice(0,50)):[],createdAt:r.createdAt||now(),updatedAt:r.updatedAt||now(),
-      voices:voices.length?voices:defaultVoices(),nodes,edges});
+      completedAt:typeof r.completedAt==='string'?r.completedAt:null,sessions:Array.isArray(r.sessions)?r.sessions.slice(-1000).map(s=>({id:String(s.id||uid('session')),startedAt:String(s.startedAt||now()),endedAt:String(s.endedAt||s.startedAt||now()),activeMs:Math.max(0,Math.min(31536000000,Number(s.activeMs)||0)),focusMs:Object.fromEntries(Object.entries(s.focusMs||{}).slice(0,3000).filter(([k,v])=>typeof k==='string'&&Number.isFinite(Number(v))).map(([k,v])=>[k,Math.max(0,Math.min(31536000000,Number(v)))]))})):[],voices:voices.length?voices:defaultVoices(),nodes,edges});
   }
   return reflections;
 }

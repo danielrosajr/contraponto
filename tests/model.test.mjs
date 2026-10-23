@@ -4,7 +4,7 @@ import {makeDemo,initialData,newReflection,normalizeImported,RELATIONS,TYPES} fr
 import {markdownFor,promptFor,makeSvg} from '../src/export.js';
 
 test('biblioteca inicial contém exemplo conectado e múltiplos caminhos',()=>{
- const d=initialData();assert.equal(d.schemaVersion,2);const r=d.reflections[0];assert.equal(r.nodes.length,15);assert.equal(r.edges.length,16);
+ const d=initialData();assert.equal(d.schemaVersion,3);const r=d.reflections[0];assert.equal(r.nodes.length,15);assert.equal(r.edges.length,16);
  assert.equal(r.nodes.filter(n=>n.type==='cenario').length,2);assert.ok(new Set(r.nodes.map(n=>n.voiceId)).size>=2);
  for(const e of r.edges){assert.ok(r.nodes.some(n=>n.id===e.source));assert.ok(r.nodes.some(n=>n.id===e.target));assert.ok(RELATIONS[e.relation]);}
  assert.ok(r.edges.some(e=>e.relation==='retorna'&&e.target===r.nodes[0].id));

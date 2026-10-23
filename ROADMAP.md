@@ -13,4 +13,4 @@ Uma visualização opcional, lúdica e narrada, que transforma a **sequência cr
 
 Proposta de etapas: (1) protótipo de replay 2D sem motor de xadrez; (2) seleção de vozes e mapeamento editável de peças/lances; (3) animação com narração, exportação de vídeo ou GIF opcional; (4) avaliação crítica de jogadas, com critérios transparentes, sem pontuação de verdade automática.
 
-**Estado:** ideia registrada para uma versão futura; não incluída na v0.2.2.
+**Estado em v0.3.0:** o prompt manual de tradução do debate para xadrez foi implementado. O tabuleiro, validação de jogadas, animação e replay continuam como ideias futuras.

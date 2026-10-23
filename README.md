@@ -1,120 +1,90 @@
 # CONTRAPONTO — Meu Laboratório de Pensamentos
 
-**Versão:** `v0.2.2 — Feedback de Classificação` · **Licença:** MIT · **Plataforma:** Web/PWA estática · **Idioma:** português brasileiro
+**Versão 0.3.0 — Fio do Raciocínio** · Gratuito · Português brasileiro · GitHub Pages · Sem login, backend ou IA externa
 
-Um mapa visual, local e privado para raciocinar, debater perspectivas, explorar possibilidades e registrar sentimentos, perguntas, comentários, pausas e conclusões. **Sem cadastro, backend, chaves de API ou bibliotecas externas**. Implementação em JavaScript modular, CSS, SVG e IndexedDB.
+Aplicativo web/PWA para organizar debates consigo mesmo num mapa visual de blocos conectados, com múltiplas vozes, classificação local de frases, minidicionário, histórico, ramificações, notas, falácias registradas manualmente, sessões e relatórios. Dados em **IndexedDB**, no navegador. Exporta/importa JSON, gera Markdown, SVG, PNG e prompts para IA. Nenhuma reflexão é enviada automaticamente a servidores.
 
 ## Começar no Ubuntu
 
 ```bash
-unzip CONTRAPONTO-v0.2.2.zip
-cd CONTRAPONTO-v0.2.2
+unzip CONTRAPONTO-v0.3.0.zip
+cd CONTRAPONTO-v0.3.0
 python3 -m http.server 8080
 ```
 
-Abra `http://localhost:8080`. Não abra o HTML diretamente pelo explorador de arquivos (`file://`); os módulos, o IndexedDB e a PWA exigem um servidor HTTP local ou HTTPS. Offline após o primeiro carregamento bem-sucedido e cache do service worker instalado.
+Abra `http://localhost:8080`. Não abra pelo `file://`: módulos e PWA dependem de HTTP ou HTTPS. A instalação/cache offline precisa do primeiro carregamento com internet (ou local). Para testes automatizados: `npm test` (Node.js 20+; não precisa `npm install`).
 
-## Melhorias da v0.2.2 — Confirmação de classificações
+## O que entrou na v0.3.0
 
-Depois de abrir uma reflexão, use **Ferramentas → Organizar → Aplicar sugestões a todos os blocos**. Revise as sugestões e marque quais serão aceitas. Ao clicar **Aplicar N sugestões**, o app abre um **resumo imediato**:
+### 1. Navegação por setas
 
-- **Analisados:** todos os blocos presentes na reflexão (inclusive blocos sem texto).
-- **Alterados:** blocos cujas sugestões foram efetivamente aceitas e aplicadas; alterar tipo e natureza no mesmo bloco conta **uma única vez**.
-- **Mantidos:** todos os demais blocos, seja por já estarem adequados, não terem sugestão ou terem sido desmarcados.
-- **Detalhamento:** informa tipos e naturezas modificados, sugestões não selecionadas, blocos sem texto e fatos preservados (quando houver).
+Selecione um bloco e use **→** para avançar por uma conexão real e **←** para voltar. Quando existem várias conexões, uma janela permite escolher o caminho; o app não escolhe uma arbitrariamente. Há botões **Anterior** e **Próximo** sobre o mapa, inclusive para toque no celular. A navegação respeita conexões e ciclos; não muda nem apaga linhas. O **←** prioriza o último caminho realmente percorrido durante a navegação, quando possível.
 
-Exemplo: 15 analisados, 10 alterados, 5 mantidos. **Não confundir quantidades sugeridas com quantidades realmente aplicadas.** Se nada precisar mudar, o resumo mostra **0 alterados** e o total mantido. Depois de fechar o resumo, aparece um **toast** de confirmação com os mesmos totais, sem encobrir os botões de revisão. O **Desfazer lote** permanece disponível para recuperar a classificação anterior.
+### 2. Retomar com resumo e destaque do caminho
 
-- Não houve mudança do banco ou do formato de backups (`schemaVersion: 2`).
-- Cache offline atualizado para `contraponto-0.2.2` e versão do pacote `0.2.2`.
-- 20 testes de lógica passaram. A interface do resumo foi testada em Chromium **com armazenamento em memória simulado**, nas resoluções 605×602 e 390×640 (fluxos de aplicar, desmarcar, confirmar, reabrir e nenhuma alteração). O navegador não pôde acessar `localhost` devido a política do ambiente; IndexedDB e service worker em navegador real ainda devem ser testados no seu dispositivo.
-- `ROADMAP.md` registra a ideia do **Xadrez de Argumentos** como recurso futuro, ainda não implementado.
+Clique **↗ Retomar**, disponível quando já existe histórico de sessão ou marcador de pausa. O sistema encontra o caminho pela rede de conexões, mostra as últimas falas e indica cada voz. Não gera interpretação de sentimentos nem inventa resumo abstrato: a prévia usa apenas os textos originais dos blocos. Após confirmar, o trecho fica destacado no mapa **por até 45 segundos**, ou até clicar **Encerrar destaque** ou adicionar novo pensamento. Os marcadores de pausa são preservados. Se o debate estava pausado ou concluído, ele volta para **em andamento**.
 
-## Como atualizar no GitHub (v0.2.2)
+### 3. Cronômetro, sessões e pausas possíveis
 
-Substitua os arquivos da raiz da v0.2.1 pelos do ZIP da v0.2.2. Mantenha o **mesmo endereço do GitHub Pages**, para preservar o armazenamento local vinculado à origem do site. Faça um backup JSON antes da atualização.
+Cada vez que você abre uma reflexão **em andamento**, inicia-se uma sessão local. O aplicativo conta tempo **aproximado de uso ativo na aba**, não tempo de reflexão fora do navegador. A contagem termina quando a página é ocultada, quando você sai, conclui, pausa explicitamente ou após **5 minutos sem interação**. Se voltar a interagir, uma nova sessão começa; uma sessão interrompida pelo fechamento inesperado preserva até o último salvamento. O contador do cabeçalho usa a soma dos tempos registrados.
 
-- Branch: `fix/contraponto-v0.2.2-feedback-classificacao`
-- Commit: `fix: confirmar classificacao em lote com resumo e toast`
-- Tag: `v0.2.2`
-- Release: **CONTRAPONTO v0.2.2 — Feedback de Classificação**
+O relatório discrimina **datas e horários de início/fim**, sessões, tempo ativo e intervalo de calendário (que pode incluir grandes pausas). Ao selecionar blocos, o tempo ativo também pode ser associado ao primeiro cenário do caminho da pergunta principal. **Não se trata de um cronômetro por pensamento confiável**: mudar o foco ou trabalhar em paralelo pode distorcer essa estimativa, que será explicitamente rotulada.
 
-No terminal, dentro do clone do repositório:
+Em **Organizar → Procurar pausas não registradas**, o sistema procura conexões diretas em que as datas de criação dos dois blocos diferem **uma hora ou mais**. Mostra as possíveis pausas para você confirmar. Se aceitar, insere um marcador novo entre os blocos sem perder a relação original (a conexão é dividida em duas). É reversível com desfazer. O marcador informa que foi **sugerido retrospectivamente**; não afirma que você realmente parou. Criar um pensamento ligado a outro muito antigo também pode mostrar uma sugestão de pausa.
 
-```bash
-git checkout main && git pull
-git checkout -b fix/contraponto-v0.2.2-feedback-classificacao
-# copie os arquivos novos por cima dos antigos na raiz
-git add .
-git commit -m "fix: confirmar classificacao em lote com resumo e toast"
-git push -u origin fix/contraponto-v0.2.2-feedback-classificacao
-```
+### 4. Marcação manual de falácias
 
-Abra um pull request para `main`, faça o merge e publique a tag/release após a validação. GitHub Pages Actions continua configurado em `.github/workflows/deploy.yml`.
+Selecione um bloco → **⚑ Marcar possível falácia**. Escolha entre espantalho, falso dilema, generalização, raciocínio circular, falsa causa, ad hominem e outras; acrescente uma justificativa e marque como suspeita, identificada por você ou descartada após revisão. Você pode editar ou apagar a marcação; nenhuma falácia é atribuída automaticamente. As marcações entram no backup, Markdown, relatório e prompt de IA, que **pede para revisar cada uma criticamente e apontar possíveis erros que você não marcou**. Uma emoção não é uma falácia e a opinião de uma IA não é veredito.
 
-## Correções e novidades na v0.2.1
+### 5. Relatório final/parcial
 
-- **Janela de edição corrigida:** o formulário respeita a altura da tela e rola internamente; os botões **Cancelar** e **Salvar alterações** ficam visíveis mesmo com muitos campos. Inclui área de segurança em celulares.
-- **Aplicar sugestões em lote:** com uma reflexão aberta, acesse **Ferramentas → Organizar → ✦ Aplicar sugestões a todos os blocos**. O aplicativo calcula as sugestões localmente e exibe o **antes e depois**. Você pode selecionar ou desmarcar cada mudança; clique **Aplicar N sugestões** para confirmar. Depois use **Revisar** para corrigir individualmente ou **Desfazer lote** para retornar ao estado anterior de uma vez.
-- **Preservação de dados:** textos, notas, posições, vozes e conexões **não são modificados** pela classificação em lote. Campos classificados manualmente como **Fato** permanecem marcados como Fato, porque a ferramenta não verifica evidências. Se a sugestão de natureza estiver indefinida, a natureza atual é preservada.
-- **Ordem alfabética:** tipos de bloco, conexões, classificações, estados e vozes nos seletores, além de termos do dicionário e ações rápidas do inspetor.
-- **Compatibilidade:** mantém `schemaVersion: 2` e o mesmo IndexedDB da v0.2.0; nenhuma migração destrutiva. O cache offline foi atualizado para `contraponto-0.2.1`.
+Clique **◎ Relatório** em qualquer momento, ou **✓ Concluir** para finalizar a sessão e abrir o relatório automaticamente. Mostra quantidade de blocos, conexões, vozes, tipos, relações, marcadores de falácia, número de sessões, tempo ativo estimado, calendário desde o primeiro bloco até o último marco/conclusão, pausas registradas e estimativa de atenção por cenário. É possível **baixar em Markdown**. O relatório é parcial enquanto a reflexão não estiver concluída.
 
-**Atenção:** a classificação assistida usa regras simples no navegador, **não uma IA generativa**. Pode errar. Exporte um backup JSON antes de instalar uma atualização importante.
+### 6. Prompt de xadrez de argumentos
 
-## O que mudou na v0.2
+Clique **♟ Prompt de xadrez** em Organizar ou **Exportar → Prompt de xadrez**. Abre texto completo para copiar ou salvar em `.txt` e levar manualmente a uma IA. Instrui a IA a correlacionar vozes/brancas/pretas e blocos/lances, justificar metáforas de xeque/blunder, criar roteiro de animação e **não inventar PGN com jogadas ilegais**. **Não** implementa ainda um tabuleiro, motor de xadrez, replay ou avaliação automática; isso continua no `ROADMAP.md`.
 
-1. **Escrita livre com classificação sugerida.** Pressione `＋ Bloco`, `＋ Pensamento livre`, `Continuar` ou `Responder`. Comece a escrever. O painel indica o tipo provável, explica por que sugeriu e tenta inferir a natureza da frase. Quando o checkbox **Aplicar sugestões enquanto escrevo** estiver marcado, os menus acompanham a sugestão. Desmarque ou altere o menu para decidir manualmente. Em edições de nós antigos e ações com tipo explícito, o automático inicia desligado; nenhuma categorização existente é substituída silenciosamente.
-2. **Dicionário contextual.** Use `? Dicionário` no cabeçalho ou `? Minidicionário` na barra lateral. No formulário, os menus **Tipo de bloco**, **Natureza da frase** e **Ligação** exibem uma explicação e exemplo logo abaixo. A busca filtra todos os termos.
-3. **Tipos de bloco novos.** Comentário (fala livre), Pausa/marcador (onde parou), Concordância provisória, Metacomentário (sobre a conversa) e Organização/roteiro (ordem das questões).
-4. **Notas laterais.** Toque num bloco e, no painel de detalhes, use `＋ Adicionar nota lateral`. Uma nota **não** vira nó do mapa. É possível remover, desfazer, consultar no histórico e levar no backup, Markdown e prompt.
-5. **Pausar e retomar.** Clique em `⏸ Registrar pausa`, descreva o que falta explorar e salve. A reflexão recebe o status **pausado**. Quando voltar, clique em `↗ Retomar` para retornar ao último marcador. Os marcadores permanecem no mapa.
-6. **Provocações ampliadas.** Agora há perguntas para distinguir sentimento, consequência, avaliação moral, autonomia, consentimento e confiança, sem apresentar análise psicológica como fato.
+## Compatibilidade e segurança dos dados
 
-## Instruções anteriores de publicação no GitHub Pages (v0.2.1)
+- Esta versão atualiza o formato normalizado para **schemaVersion 3**, preservando reflexões antigas (`schemaVersion 1/2`) sem migração destrutiva. Blocos, vozes, posições, tipos, notas e conexões antigos são mantidos; sessões e falácias começam vazias quando não existiam.
+- **Faça backup JSON antes de atualizar**. Use a **mesma URL do GitHub Pages**: IndexedDB está ligado à origem, e trocar de domínio/repositório pode parecer apagar a biblioteca. Backups privados não devem entrar no GitHub.
+- Dados armazenados localmente **não são criptografados pelo aplicativo**. Limpar armazenamento do site pode excluí-los. O modo anônimo pode ser temporário.
+- Não envia dados automaticamente à IA; exportações e cópias são iniciadas manualmente.
+- O tempo é uma **aproximação baseada em uso do app** e não contabiliza pensamento fora da tela; diferenças entre criação de blocos não provam pausa.
 
-Se **já usa o repositório `contraponto`**, substitua os arquivos na mesma raiz; não crie um segundo repositório por obrigação. Antes de atualizar, faça um backup **Exportar → Backup completo (.json)** no app, especialmente se trocar de endereço.
+## Publicar no GitHub Pages
+
+Se você já tem o repositório `contraponto`, **substitua** os arquivos da raiz pelos do ZIP, incluindo pastas `src/`, `tests/`, `samples/`, `assets/` e `.github/`. Não copie a pasta `CONTRAPONTO-v0.3.0` como subdiretório extra. Não é necessário remover arquivos antigos, exceto arquivos temporários locais que não pertenciam ao repositório.
+
+**Branch:** `feat/contraponto-v0.3.0-fio-do-raciocinio`  
+**Commit:** `feat: adicionar navegacao guiada sessoes falacias e relatorios`  
+**Tag:** `v0.3.0`  
+**Release:** `CONTRAPONTO v0.3.0 — Fio do Raciocínio`
 
 ```bash
-# dentro do seu clone do repositório existente
 git checkout main
 git pull
-git checkout -b fix/contraponto-v0.2.1-modal-e-classificacao-lote
-# copie e substitua os arquivos do ZIP na raiz do clone
+git checkout -b feat/contraponto-v0.3.0-fio-do-raciocinio
+# Copie o conteúdo descompactado para a raiz do clone
 git add .
-git commit -m "fix: ajustar modal e adicionar classificacao em lote"
-git push -u origin fix/contraponto-v0.2.1-modal-e-classificacao-lote
+git commit -m "feat: adicionar navegacao guiada sessoes falacias e relatorios"
+git push -u origin feat/contraponto-v0.3.0-fio-do-raciocinio
 ```
 
-Depois faça merge na `main`. Em **Settings → Pages → Build and deployment → Source**, selecione **GitHub Actions**. O workflow em `.github/workflows/deploy.yml` publica a raiz quando há push em `main`.
+Abra um pull request, faça o merge para `main`, crie a tag `v0.3.0` e publique o release. Em **Settings → Pages → Source**, selecione **GitHub Actions**; o arquivo `.github/workflows/deploy.yml` executa a publicação. Após o deploy, atualize a página novamente se o service worker ainda mostrar uma interface anterior.
 
-Crie a **tag** `v0.2.1` e o **release** `CONTRAPONTO v0.2.1 — Revisão em Lote` na seção Releases. Se não usa Actions, as instruções podem mudar conforme a configuração do repositório. Após publicar, recarregue o site para atualizar o service worker e, se necessário, recarregue novamente. Não publique backups de reflexões pessoais no repositório.
+## Arquivos importantes
 
-> **Privacidade:** o GitHub Pages publica os arquivos estáticos e o código, mas não os pensamentos salvos no navegador. O IndexedDB permanece local ao perfil/origem do navegador. Ele **não é criptografado pelo app** e pode ser apagado ao limpar dados do site. Os backups e prompts só saem do aparelho quando você os exporta/copiar manualmente.
+- `index.html`, `style.css`, `src/main.js`: interface e editor.
+- `src/model.js`, `src/storage.js`: dados/backup e IndexedDB.
+- `src/journey.js`: conexões, caminhos, pausas suspeitas e tempos.
+- `src/metrics.js`: métricas e relatório Markdown.
+- `src/fallacies.js`: catálogo local de falácias e estados.
+- `src/chess.js`: prompt de xadrez (sem motor de IA/xadrez).
+- `src/inference.js`, `src/batch.js`, `src/glossary.js`, `src/export.js`: classificação local, dicionário e exportações.
+- `samples/reflexao-demonstrativa.json`: exemplo de mapa; não é um registro pessoal real.
+- `tests/*.test.mjs`: testes unitários sem dependências externas.
 
-## Recursos preservados da v0.1
+## Verificações executadas
 
-Biblioteca de reflexões, voz interna, nós posicionáveis, mapa com pan/zoom/minimapa, conexões semânticas, ramificações e retornos, histórico cronológico, recolhimento de caminhos, desfazer/refazer (até 50 mudanças do mapa por sessão), modo claro/escuro e exportações Markdown, SVG, PNG, JSON e prompt de IA. Tudo gratuito e sem backend.
-
-## Exemplo e testes
-
-- `samples/reflexao-demonstrativa.json` — mapa de 15 blocos, 16 conexões e uma nota lateral.
-- `samples/mapa-demonstrativo.svg` — representação vetorial exportada, sem cortes.
-- `src/inference.js` — motor de sugestões determinístico e local (heurísticas, **não uma IA**).
-- `src/batch.js` — planejamento de sugestões em lote sem mutação dos blocos.
-- `src/glossary.js` — definições e exemplos.
-- `src/model.js`, `src/storage.js`, `src/main.js`, `src/export.js` — domínio, IndexedDB, editor e exportações.
-- `tests/model.test.mjs`, `tests/inference.test.mjs`, `tests/batch.test.mjs` — testes automatizados executáveis com Node.js 20+:
-
-```bash
-npm test
-```
-
-### Limitações e cuidados
-
-- O assistente **não entende de fato a intenção**, não valida premissas, não checa fontes, não detecta contradições lógicas automaticamente e não determina a moralidade de condutas. É apenas uma sugestão baseada em padrões de linguagem; texto ambíguo pode receber um rótulo inadequado. **Fato** nunca é classificado automaticamente: marque manualmente após verificação.
-- Não existe sincronização entre celulares/computadores; exporte JSON para transferir seus dados.
-- O funcionamento sem conexão começa após a instalação do cache em HTTPS ou localhost; não há garantia se o navegador limpar armazenamento.
-- PNGs de mapas enormes podem exceder limites de memória/tamanho do navegador; SVG tende a ser mais robusto.
-- Desfazer/refazer é por sessão e não cobre todas as operações da biblioteca/vozes. Evite editar o mesmo mapa em duas abas simultaneamente.
-- Os 17 testes de lógica passaram. Simulamos UI com HTML/CSS/JavaScript carregados diretamente no Chromium em três resoluções (390×640, 605×602, 1100×720): modal, classificação em lote, desfazer e revisão individual funcionaram sem erros JavaScript. **O teste de UI usou armazenamento simulado em memória**. A navegação HTTP local no navegador automatizado foi bloqueada por política e persistência/offline em dispositivo real não foram novamente testados. Verifique no seu navegador e faça backup.
+**30 testes automatizados de Node.js passaram**, incluindo caminhos com ramificações/ciclos, gaps temporais, relatórios, falácias e backup antigo. Também executamos **smoke tests da interface no Chromium** utilizando uma montagem inline e **IndexedDB simulado**, pois o navegador de teste bloqueia navegação para endereços HTTP/HTTPS locais. Testados: abertura da biblioteca, seleção e escolha de ramificação, retomada com ênfase temporária, detecção/inserção confirmada de pausa, relatório/conclusão, falácia e prompt de xadrez. Ainda **não** foram validados em um deploy real o IndexedDB persistente, o cache offline e a interação touch em dispositivo físico. Essas validações são recomendadas antes de considerar a versão estável.

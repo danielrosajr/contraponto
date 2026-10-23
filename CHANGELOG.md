@@ -1,50 +1,31 @@
 # Histórico de versões
 
-## v0.2.2 — Feedback de Classificação (22/10/2026)
+## v0.3.0 — Fio do Raciocínio (2026-10-22)
 
-- Confirmação da classificação em lote com modal de resumo: analisados, alterados e mantidos; divisão por tipo/natureza e indicações de sugestões desmarcadas.
-- Toast de sucesso com os totais aparece ao fechar o resumo, evitando cobrir botões da janela; tempo maior de leitura.
-- Caso sem sugestões também exibe confirmação com zero mudanças, sem alterar o mapa.
-- Sem mudanças no IndexedDB, exportação ou formato de backup; cache offline renovado e versão `0.2.2`.
-- +3 testes de contagem de resultados (20 no total); UI simulada testada no Chromium em 605×602 e 390×640 com aplicação parcial e total, recapitulação e nenhuma alteração.
-- Incluído `ROADMAP.md` para a ideia futura de xadrez simbólico de argumentos, sem implementar a funcionalidade nesta versão.
+- `feat`: navegação por conexões com setas ←/→ e botões de toque; escolha explícita nas bifurcações.
+- `feat`: retomada guiada a partir da pausa, recapitulação das vozes e destaque temporário do caminho percorrido.
+- `feat`: registro local de sessões com horários e tempo ativo estimado, limite de 5 minutos sem interação e interrupção quando o app fica oculto.
+- `feat`: varredura de possíveis pausas por intervalo ≥ 1h entre blocos ligados; inserção confirmada, reversível e explicitamente marcada como sugestão retrospectiva.
+- `feat`: marcação manual de falácias nos blocos, com status e justificativa.
+- `feat`: relatório final/parcial com contagem de tipos, vozes, conexões, tempo, sessões, pausas e distribuição aproximada por cenário.
+- `feat`: prompt de xadrez para copiar ou salvar, com restrições de PGN e apresentação simbólica de lances.
+- `fix`: apresentação do dicionário — definição e exemplo completos para cada termo.
+- `fix`: evitar que o arraste do fundo capture clique no botão "Encerrar destaque".
+- `compat`: schemaVersion 3 com importação não destrutiva de reflexões antigas; cache offline `contraponto-0.3.0`.
+- `test`: 30 testes automatizados (10 adicionais) e smoke tests de interface com armazenamento simulado.
 
+## v0.2.2 — Feedback de Classificação
 
-## v0.2.1 — Revisão em Lote (22/10/2026)
+- Janela-resumo e toast após classificação em lote, mostrando analisados, alterados e mantidos.
 
-### Correções
-- Janela de edição adaptada à altura da tela: rolagem interna e botões de salvar/cancelar permanentemente acessíveis, inclusive em janelas pequenas.
+## v0.2.1 — Revisão em Lote
 
-### Novidades
-- Analisar todos os blocos de uma reflexão de uma vez, pré-visualizar classificações atuais e sugeridas, selecionar individualmente, confirmar lote e revisar depois, com um único passo para desfazer o lote inteiro.
-- Preserva textos, vozes, notas, conexões, posições e a natureza manual Fato, mesmo quando o motor de regras propõe mudanças.
-- Opções de tipos, relações, classificações, estados, vozes e blocos de origem/destino em ordem alfabética. Também ordena termos do glossário e ações rápidas.
+- Modal adaptado a telas menores; seleção e revisão individual de classificações em lote; menus alfabéticos.
 
-### Compatibilidade e testes
-- Dados mantidos na estrutura `schemaVersion: 2`; novo cache offline `contraponto-0.2.1` e módulo `src/batch.js`.
-- 17 testes automatizados passam. UI simulada no Chromium em três tamanhos usando armazenamento em memória: edição, prévia, aplicação, revisão e desfazer testados. A navegação HTTP local foi bloqueada por política, então persistência/offline reais ainda devem ser validados no dispositivo.
+## v0.2.0 — Pensamento Livre
 
-## v0.2.0 — Pensamento Livre (22/10/2026)
+- Assistente local de classificação, minidicionário, comentários, metacomentários, pausas, notas laterais e concordâncias provisórias.
 
-### Novidades
-- **Minidicionário interativo:** 17 tipos de bloco, cinco classificações opcionais e sete tipos de conexão (incluindo a opção de não classificar). Pesquisa e definições com exemplos diretamente na edição.
-- **Escrita livre assistida:** ao digitar, regras locais e explicáveis sugerem um tipo e a natureza do pensamento, apresentando motivo, confiança aproximada e alternativas. Sem IA, internet ou envio de dados; classificação manual permanece soberana.
-- **Cinco novos tipos de bloco:** Comentário, Pausa/marcador, Concordância provisória, Metacomentário e Organização/roteiro.
-- **Notas laterais reais:** anotações associadas a um bloco sem criar nós/conexões; adicionar, visualizar, remover, desfazer e exportar notas no Markdown/JSON/prompt.
-- **Pausa e retomada:** botão para registrar pausa, marcar a reflexão como pausada e retomar o último marcador.
-- **Debate mais natural:** ações Continuar e Responder não forçam mais um tipo de argumento; sugestões de perguntas ampliadas (sentimentos, consequências, ética, autonomia, transparência e consentimento).
-- **Exemplo demonstrativo ampliado:** 15 blocos conectados, 16 ligações e uma nota lateral de exemplo.
+## v0.1.0 — Primeiro Pensamento
 
-### Compatibilidade
-- Preserva e normaliza mapas da versão 0.1: títulos, vozes, posições, relações e tipos antigos.
-- O formato de dados sobe para `schemaVersion: 2`. A importação aceita backups das versões anteriores.
-- Atualiza cache offline do service worker para `contraponto-0.2.0` e inclui os novos módulos.
-
-### Testes e limitações
-- 14 testes automatizados de modelo, inferência e exportação.
-- Verificação de sintaxe JS e referências de IDs estáticos.
-- Teste visual/navegação automatizada bloqueado por política do Chromium no ambiente de geração; testar manualmente antes de divulgar como estável.
-- Classificação por heurísticas pode errar em frases ambíguas, irônicas ou longas e **não verifica fatos nem emite juízos morais**.
-
-## v0.1.0 — Primeiro Pensamento (22/10/2026)
-- Editor visual conectado, vozes, histórico, armazenamento local, exportações e GitHub Pages.
+- Mapa visual, editor de nós/conexões, múltiplas vozes, histórico, exportação e armazenamento local.
